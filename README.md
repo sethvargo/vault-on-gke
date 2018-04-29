@@ -21,6 +21,8 @@ Engine](https://github.com/kelseyhightower/vault-on-google-kubernetes-engine), b
 
 1. Download, install, and configure the [Google Cloud SDK][sdk]. You will need to configure your default application credentials so Terraform can run. It will run against your default project, but all resources are created in the (new) project that it creates.
 
+1. Install the [kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) (aka `kubectl`)
+
 1. Run Terraform:
 
     ```
