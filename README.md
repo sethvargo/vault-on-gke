@@ -25,6 +25,7 @@ Engine](https://github.com/kelseyhightower/vault-on-google-kubernetes-engine), b
 
     ```
     $ cd terraform/
+    $ terraform init
     $ terraform apply
     ```
 
