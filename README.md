@@ -71,6 +71,22 @@ $ terraform destroy
 
 Note that this can sometimes fail. Re-run it and it should succeed. If things get into a bad state, you can always just delete the project.
 
+## Security
+
+This set of Terraform configurations is designed to make your life easy. It's
+a best-practices setup for Vault, but also aids in the retrieval of the initial
+root token. **The decrypted initial root token will be stored in your state file!**
+
+As such, you should use a Terraform state backend that supports encryption.
+Alternatively you can remove the decryption calls in `k8s.tf` and manually
+decrypt the root token using `gcloud`. Terraform auto-generates the command, but
+you will need to setup the permissions for your local default application
+credentials.
+
+```
+$ $(terraform output token_decrypt_command)
+```
+
 ## FAQ
 
 **Q: How is this different than [kelseyhightower/vault-on-google-kubernetes-engine](https://github.com/kelseyhightower/vault-on-google-kubernetes-engine)?**
