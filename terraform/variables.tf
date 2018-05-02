@@ -16,6 +16,11 @@ variable "org_id" {
   type = "string"
 }
 
+variable "instance_type" {
+  type    = "string"
+  default = "n1-standard-2"
+}
+
 variable "project_services" {
   type = "list"
 

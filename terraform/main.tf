@@ -125,7 +125,7 @@ resource "google_container_cluster" "vault" {
   initial_node_count = "${var.num_vault_servers}"
 
   node_config {
-    machine_type    = "n1-standard-2"
+    machine_type    = "${var.instance_type}"
     service_account = "${google_service_account.vault-server.email}"
 
     oauth_scopes = [
