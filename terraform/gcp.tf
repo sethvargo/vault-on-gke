@@ -113,6 +113,7 @@ resource "google_container_cluster" "vault" {
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
+      "https://www.googleapis.com/auth/iam",
     ]
 
     tags = ["vault"]
