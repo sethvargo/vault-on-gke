@@ -8,6 +8,11 @@ variable "zone" {
   default = "us-east4-b"
 }
 
+variable "project" {
+  type    = "string"
+  default = ""
+}
+
 variable "billing_account" {
   type = "string"
 }

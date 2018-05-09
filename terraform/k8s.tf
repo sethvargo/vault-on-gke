@@ -67,14 +67,14 @@ EOF
 resource "null_resource" "wait-for-finish" {
   provisioner "local-exec" {
     command = <<EOF
-for i in {1..5}; do
+for i in {1..15}; do
   sleep $i
   if [ $(kubectl get pod | grep vault | wc -l) -eq 5 ]; then
     exit 0
   fi
 done
 
-echo "Pods are not ready after 15s"
+echo "Pods are not ready after 2m"
 exit 1
 EOF
   }

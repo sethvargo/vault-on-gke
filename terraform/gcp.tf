@@ -1,7 +1,8 @@
 # This file contains all the interactions with Google Cloud
 provider "google" {
-  region = "${var.region}"
-  zone   = "${var.zone}"
+  region  = "${var.region}"
+  zone    = "${var.zone}"
+  project = "${var.project}"
 }
 
 # Generate a random id for the project
@@ -47,24 +48,6 @@ resource "google_project_service" "service" {
   # destroy the project, but we need the APIs available to destroy the
   # underlying resources.
   disable_on_destroy = false
-
-  # There's a bug in the Terraform provider in that it does not wait for a
-  # service to become available before continuing. This can cause later calls
-  # to fail. This has a sad dependency on the gcloud CLI, but it gets the job
-  # done.
-  provisioner "local-exec" {
-    command = <<EOF
-for i in {1..5}; do
-  sleep $i
-  if gcloud services list --project="${google_project.vault.project_id}" | grep "${element(var.project_services, count.index)}"; then
-    exit 0
-  fi
-done
-
-echo "Service was not enabled after 15s"
-exit 1
-EOF
-  }
 }
 
 # Create the storage bucket
