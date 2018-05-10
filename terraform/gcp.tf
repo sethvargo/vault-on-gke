@@ -33,8 +33,9 @@ resource "google_service_account_key" "vault" {
 
 # Add the service account to the project
 resource "google_project_iam_member" "service-account" {
+  count   = "${length(var.service_account_iam_roles)}"
   project = "${google_project.vault.project_id}"
-  role    = "roles/viewer"
+  role    = "${element(var.service_account_iam_roles, count.index)}"
   member  = "serviceAccount:${google_service_account.vault-server.email}"
 }
 

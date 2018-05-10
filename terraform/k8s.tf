@@ -39,19 +39,20 @@ data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
 
   vars {
-    load_balancer_ip = "${google_compute_address.vault.address}"
+    load_balancer_ip  = "${google_compute_address.vault.address}"
+    num_vault_servers = "${var.num_vault_servers}"
   }
 }
 
 # Submit the job
 resource "null_resource" "apply" {
   triggers {
-    host                   = "${google_container_cluster.vault.endpoint}"
-    username               = "${google_container_cluster.vault.master_auth.0.username}"
-    password               = "${google_container_cluster.vault.master_auth.0.password}"
-    client_certificate     = "${base64decode(google_container_cluster.vault.master_auth.0.client_certificate)}"
-    client_key             = "${base64decode(google_container_cluster.vault.master_auth.0.client_key)}"
-    cluster_ca_certificate = "${base64decode(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
+    host                   = "${md5(google_container_cluster.vault.endpoint)}"
+    username               = "${md5(google_container_cluster.vault.master_auth.0.username)}"
+    password               = "${md5(google_container_cluster.vault.master_auth.0.password)}"
+    client_certificate     = "${md5(google_container_cluster.vault.master_auth.0.client_certificate)}"
+    client_key             = "${md5(google_container_cluster.vault.master_auth.0.client_key)}"
+    cluster_ca_certificate = "${md5(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
   }
 
   provisioner "local-exec" {
@@ -69,7 +70,7 @@ resource "null_resource" "wait-for-finish" {
     command = <<EOF
 for i in {1..15}; do
   sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq 5 ]; then
+  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_servers} ]; then
     exit 0
   fi
 done

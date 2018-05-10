@@ -26,11 +26,25 @@ variable "instance_type" {
   default = "n1-standard-2"
 }
 
+variable "service_account_iam_roles" {
+  type = "list"
+
+  default = [
+    "roles/resourcemanager.projectIamAdmin",
+    "roles/iam.serviceAccountAdmin",
+    "roles/iam.serviceAccountKeyAdmin",
+    "roles/iam.serviceAccountTokenCreator",
+    "roles/iam.serviceAccountUser",
+    "roles/viewer",
+  ]
+}
+
 variable "project_services" {
   type = "list"
 
   default = [
     "cloudkms.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
     "container.googleapis.com",
     "containerregistry.googleapis.com",
     "iam.googleapis.com",
@@ -61,7 +75,7 @@ variable "kubernetes_version" {
 
 variable "num_vault_servers" {
   type    = "string"
-  default = "5"
+  default = "3"
 }
 
 variable "google_account_email" {
