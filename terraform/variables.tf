@@ -70,7 +70,7 @@ variable "kms_crypto_key_roles" {
 
 variable "kubernetes_version" {
   type    = "string"
-  default = "1.9.6-gke.1"
+  default = "1.10.2-gke.1"
 }
 
 variable "num_vault_servers" {
