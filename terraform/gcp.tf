@@ -5,7 +5,8 @@ provider "google" {
   project = "${var.project}"
 }
 
-# Generate a random id for the project
+# Generate a random id for the project - GCP projects must have globally
+# unique names
 resource "random_id" "random" {
   prefix      = "vault-"
   byte_length = "8"
@@ -105,6 +106,8 @@ resource "google_container_cluster" "vault" {
 
   min_master_version = "${var.kubernetes_version}"
   node_version       = "${var.kubernetes_version}"
+  logging_service    = "${var.kubernetes_logging_service}"
+  monitoring_service = "${var.kubernetes_monitoring_service}"
 
   initial_node_count = "${var.num_vault_servers}"
 
@@ -114,7 +117,10 @@ resource "google_container_cluster" "vault" {
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/iam",
+      "https://www.googleapis.com/auth/compute",
+      "https://www.googleapis.com/auth/devstorage.read_write",
+      "https://www.googleapis.com/auth/logging.write",
+      "https://www.googleapis.com/auth/monitoring",
     ]
 
     tags = ["vault"]
@@ -132,104 +138,18 @@ resource "google_compute_address" "vault" {
   depends_on = ["google_project_service.service"]
 }
 
-# Generate self-signed TLS certificates. Unlike @kelseyhightower's original
-# demo, this does not use cfssl and uses Terraform's internals instead.
-resource "tls_private_key" "vault-ca" {
-  algorithm = "RSA"
-  rsa_bits  = "2048"
-}
-
-resource "tls_self_signed_cert" "vault-ca" {
-  key_algorithm   = "${tls_private_key.vault-ca.algorithm}"
-  private_key_pem = "${tls_private_key.vault-ca.private_key_pem}"
-
-  subject {
-    common_name  = "vault-ca.local"
-    organization = "HashiCorp Vault"
-  }
-
-  validity_period_hours = 8760
-  is_ca_certificate     = true
-
-  allowed_uses = [
-    "cert_signing",
-    "digital_signature",
-    "key_encipherment",
-  ]
-
-  provisioner "local-exec" {
-    command = "echo '${self.cert_pem}' > ../tls/ca.pem && chmod 0600 ../tls/ca.pem"
-  }
-}
-
-# Create the Vault server certificates
-resource "tls_private_key" "vault" {
-  algorithm = "RSA"
-  rsa_bits  = "2048"
-
-  provisioner "local-exec" {
-    command = "echo '${self.private_key_pem}' > ../tls/vault.key && chmod 0600 ../tls/vault.key"
-  }
-}
-
-# Create the request to sign the cert with our CA
-resource "tls_cert_request" "vault" {
-  key_algorithm   = "${tls_private_key.vault.algorithm}"
-  private_key_pem = "${tls_private_key.vault.private_key_pem}"
-
-  dns_names = [
-    "vault",
-    "vault.local",
-    "vault.default.svc.cluster.local",
-    "localhost",
-  ]
-
-  ip_addresses = [
-    "127.0.0.1",
-    "${google_compute_address.vault.address}",
-  ]
-
-  subject {
-    common_name  = "vault.local"
-    organization = "HashiCorp Vault"
-  }
-}
-
-# Now sign the cert
-resource "tls_locally_signed_cert" "vault" {
-  cert_request_pem = "${tls_cert_request.vault.cert_request_pem}"
-
-  ca_key_algorithm   = "${tls_private_key.vault-ca.algorithm}"
-  ca_private_key_pem = "${tls_private_key.vault-ca.private_key_pem}"
-  ca_cert_pem        = "${tls_self_signed_cert.vault-ca.cert_pem}"
-
-  validity_period_hours = 8760
-
-  allowed_uses = [
-    "cert_signing",
-    "client_auth",
-    "digital_signature",
-    "key_encipherment",
-    "server_auth",
-  ]
-
-  provisioner "local-exec" {
-    command = "echo '${self.cert_pem}' > ../tls/vault.pem && echo '${tls_self_signed_cert.vault-ca.cert_pem}' >> ../tls/vault.pem && chmod 0600 ../tls/vault.pem"
-  }
+output "address" {
+  value = "${google_compute_address.vault.address}"
 }
 
 output "project" {
   value = "${google_project.vault.project_id}"
 }
 
-output "zone" {
-  value = "${var.zone}"
-}
-
 output "region" {
   value = "${var.region}"
 }
 
-output "address" {
-  value = "${google_compute_address.vault.address}"
+output "zone" {
+  value = "${var.zone}"
 }

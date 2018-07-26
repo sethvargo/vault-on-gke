@@ -44,7 +44,8 @@ data "template_file" "vault" {
   }
 }
 
-# Submit the job
+# Submit the job - Terraform doesn't yet support StatefulSets, so we have to
+# shell out.
 resource "null_resource" "apply" {
   triggers {
     host                   = "${md5(google_container_cluster.vault.endpoint)}"
@@ -58,13 +59,14 @@ resource "null_resource" "apply" {
   provisioner "local-exec" {
     command = <<EOF
 gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --zone="${google_container_cluster.vault.zone}" --project="${google_container_cluster.vault.project}"
-kubectl config set-context "gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.zone}_${google_container_cluster.vault.name}"
 
-echo '${data.template_file.vault.rendered}' | kubectl apply -f -
+CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.zone}_${google_container_cluster.vault.name}"
+echo '${data.template_file.vault.rendered}' | kubectl apply --context="$CONTEXT" -f -
 EOF
   }
 }
 
+# Wait for all the servers to be ready
 resource "null_resource" "wait-for-finish" {
   provisioner "local-exec" {
     command = <<EOF
@@ -108,6 +110,8 @@ output "token" {
   value = "${data.google_kms_secret.root-token.plaintext}"
 }
 
-output "token_decrypt_command" {
-  value = "gsutil cat gs://${google_storage_bucket.vault.name}/root-token.enc | base64 --decode | gcloud kms decrypt --project ${google_project.vault.project_id} --location ${var.region} --keyring ${google_kms_key_ring.vault.name} --key ${google_kms_crypto_key.vault-init.name} --ciphertext-file - --plaintext-file -"
-}
+# Uncomment this if you want to decrypt the token yourself
+# output "token_decrypt_command" {
+#   value = "gsutil cat gs://${google_storage_bucket.vault.name}/root-token.enc | base64 --decode | gcloud kms decrypt --project ${google_project.vault.project_id} --location ${var.region} --keyring ${google_kms_key_ring.vault.name} --key ${google_kms_crypto_key.vault-init.name} --ciphertext-file - --plaintext-file -"
+# }
+

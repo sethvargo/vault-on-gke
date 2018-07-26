@@ -73,6 +73,16 @@ variable "kubernetes_version" {
   default = "1.10.5-gke.0"
 }
 
+variable "kubernetes_logging_service" {
+  type    = "string"
+  default = "logging.googleapis.com/kubernetes"
+}
+
+variable "kubernetes_monitoring_service" {
+  type    = "string"
+  default = "monitoring.googleapis.com/kubernetes"
+}
+
 variable "num_vault_servers" {
   type    = "string"
   default = "3"
