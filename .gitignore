@@ -1,4 +1,4 @@
-terraform/.terraform
+terraform/.terraform*
 terraform/credentials.json
 terraform/terraform.tfvars
 terraform/terraform.tfstate*
