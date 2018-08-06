@@ -43,6 +43,7 @@ spec:
                 operator: In
                 values: ['vault']
             topologyKey: kubernetes.io/hostname
+      terminationGracePeriodSeconds: 10
       containers:
       - name: vault-init
         image: registry.hub.docker.com/sethvargo/vault-init:0.1.0
