@@ -13,9 +13,7 @@ spec:
   ports:
   - name: vault-port
     port: 8200
-    protocol: TCP
-  - name: cluster-port
-    port: 8201
+    targetPort: 8200
     protocol: TCP
 
 ---
