@@ -70,7 +70,7 @@ variable "kms_crypto_key_roles" {
 
 variable "kubernetes_version" {
   type    = "string"
-  default = "1.10.5-gke.0"
+  default = "1.10.5-gke.3"
 }
 
 variable "kubernetes_logging_service" {
@@ -86,8 +86,4 @@ variable "kubernetes_monitoring_service" {
 variable "num_vault_servers" {
   type    = "string"
   default = "3"
-}
-
-variable "google_account_email" {
-  type = "string"
 }
