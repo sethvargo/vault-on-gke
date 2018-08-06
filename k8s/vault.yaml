@@ -46,7 +46,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: vault-init
-        image: registry.hub.docker.com/sethvargo/vault-init:0.1.0
+        image: registry.hub.docker.com/sethvargo/vault-init:0.1.1
         imagePullPolicy: Always
         env:
         - name: CHECK_INTERVAL
