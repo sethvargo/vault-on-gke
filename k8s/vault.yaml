@@ -113,6 +113,8 @@ spec:
               address       = "0.0.0.0:8200"
               tls_cert_file = "/etc/vault/tls/vault.crt"
               tls_key_file  = "/etc/vault/tls/vault.key"
+
+              tls_disable_client_certs = true
             }
         readinessProbe:
           httpGet:
