@@ -17,7 +17,7 @@ variable "billing_account" {
   type = "string"
 }
 
-variable "org_id" {
+variable "org" {
   type = "string"
 }
 
