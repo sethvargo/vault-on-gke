@@ -1,10 +1,3 @@
-# This file contains all the interactions with Google Cloud
-provider "google" {
-  region  = "${var.region}"
-  zone    = "${var.zone}"
-  project = "${var.project}"
-}
-
 # Generate a random id for the project - GCP projects must have globally
 # unique names
 resource "random_id" "random" {
