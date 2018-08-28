@@ -1,10 +1,3 @@
-# This file contains all the interactions with Google Cloud
-provider "google" {
-  region  = "${var.region}"
-  zone    = "${var.zone}"
-  project = "${var.project}"
-}
-
 # Generate a random id for the project - GCP projects must have globally
 # unique names
 resource "random_id" "random" {
@@ -12,11 +5,15 @@ resource "random_id" "random" {
   byte_length = "8"
 }
 
+data "google_organization" "org" {
+  domain = "${var.org}"
+}
+
 # Create the project
 resource "google_project" "vault" {
   name            = "${random_id.random.hex}"
   project_id      = "${random_id.random.hex}"
-  org_id          = "${var.org_id}"
+  org_id          = "${data.google_organization.org.id}"
   billing_account = "${var.billing_account}"
 }
 

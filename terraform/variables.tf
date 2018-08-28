@@ -17,7 +17,7 @@ variable "billing_account" {
   type = "string"
 }
 
-variable "org_id" {
+variable "org" {
   type = "string"
 }
 
@@ -70,7 +70,7 @@ variable "kms_crypto_key_roles" {
 
 variable "kubernetes_version" {
   type    = "string"
-  default = "1.10.5-gke.3"
+  default = "1.10.5-gke.4"
 }
 
 variable "kubernetes_logging_service" {
