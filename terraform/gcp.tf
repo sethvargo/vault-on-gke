@@ -98,18 +98,24 @@ resource "google_kms_crypto_key_iam_member" "vault-init" {
   member        = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
+# Get latest cluster version
+data "google_container_engine_versions" "versions" {
+  zone = "${var.zone}"
+}
+
 # Create the GKE cluster
 resource "google_container_cluster" "vault" {
   name    = "vault"
   project = "${google_project.vault.project_id}"
   zone    = "${var.zone}"
 
-  min_master_version = "${var.kubernetes_version}"
-  node_version       = "${var.kubernetes_version}"
+  initial_node_count = "${var.num_vault_servers}"
+
+  min_master_version = "${data.google_container_engine_versions.versions.latest_master_version}"
+  node_version       = "${data.google_container_engine_versions.versions.latest_node_version}"
+
   logging_service    = "${var.kubernetes_logging_service}"
   monitoring_service = "${var.kubernetes_monitoring_service}"
-
-  initial_node_count = "${var.num_vault_servers}"
 
   node_config {
     machine_type    = "${var.instance_type}"

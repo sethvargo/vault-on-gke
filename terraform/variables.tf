@@ -68,11 +68,6 @@ variable "kms_crypto_key_roles" {
   ]
 }
 
-variable "kubernetes_version" {
-  type    = "string"
-  default = "1.10"
-}
-
 variable "kubernetes_logging_service" {
   type    = "string"
   default = "logging.googleapis.com/kubernetes"
