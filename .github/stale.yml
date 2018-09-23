@@ -3,6 +3,9 @@ daysUntilClose: 14
 exemptMilestones: true
 staleLabel: waiting-reply
 
+exemptLabels:
+- thinking
+
 markComment: >
   Hi there! This has been automatically marked as stale because it has not
   had activity in the past 14 days. It will be closed in 14 days if no
