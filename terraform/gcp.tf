@@ -63,6 +63,16 @@ resource "google_storage_bucket" "vault" {
     enabled = true
   }
 
+  lifecycle_rule {
+    action {
+      type = "delete"
+    }
+
+    condition {
+      num_newer_versions = 3
+    }
+  }
+
   depends_on = ["google_project_service.service"]
 }
 
