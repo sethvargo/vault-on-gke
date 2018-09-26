@@ -65,7 +65,7 @@ resource "google_storage_bucket" "vault" {
 
   lifecycle_rule {
     action {
-      type = "delete"
+      type = "Delete"
     }
 
     condition {
@@ -133,16 +133,17 @@ resource "google_container_cluster" "vault" {
 
     oauth_scopes = [
       "https://www.googleapis.com/auth/cloud-platform",
-      "https://www.googleapis.com/auth/compute",
-      "https://www.googleapis.com/auth/devstorage.read_write",
-      "https://www.googleapis.com/auth/logging.write",
-      "https://www.googleapis.com/auth/monitoring",
     ]
 
     tags = ["vault"]
   }
 
-  depends_on = ["google_project_service.service"]
+  depends_on = [
+    "google_project_service.service",
+    "google_kms_crypto_key_iam_member.vault-init",
+    "google_storage_bucket_iam_member.vault-server",
+    "google_project_iam_member.service-account",
+  ]
 }
 
 # Provision IP

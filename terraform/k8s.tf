@@ -56,6 +56,11 @@ resource "null_resource" "apply" {
     cluster_ca_certificate = "${md5(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
   }
 
+  depends_on = [
+    "kubernetes_secret.vault-tls",
+    "kubernetes_config_map.vault",
+  ]
+
   provisioner "local-exec" {
     command = <<EOF
 gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --zone="${google_container_cluster.vault.zone}" --project="${google_container_cluster.vault.project}"
