@@ -75,7 +75,7 @@ EOF
 resource "null_resource" "wait-for-finish" {
   provisioner "local-exec" {
     command = <<EOF
-for i in {1..15}; do
+for i in $(seq -s " " 1 15); do
   sleep $i
   if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_servers} ]; then
     exit 0
