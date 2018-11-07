@@ -66,7 +66,7 @@ spec:
               name: vault
               key: kms_key_id
       - name: vault
-        image: registry.hub.docker.com/library/vault:0.11.1
+        image: registry.hub.docker.com/library/vault:0.11.4
         imagePullPolicy: Always
         args: ['server']
         securityContext:
