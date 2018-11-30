@@ -8,7 +8,7 @@ provider "google" {
 # Generate a random id for the project - GCP projects must have globally
 # unique names
 resource "random_id" "random" {
-  prefix      = "vault-"
+  prefix      = "${var.project_prefix}"
   byte_length = "8"
 }
 
