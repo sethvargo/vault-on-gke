@@ -13,6 +13,11 @@ variable "project" {
   default = ""
 }
 
+variable "project_prefix" {
+  type    = "string"
+  default = "vault-"
+}
+
 variable "billing_account" {
   type = "string"
 }
