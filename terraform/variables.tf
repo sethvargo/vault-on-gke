@@ -50,6 +50,8 @@ variable "service_account_iam_roles" {
   type = "list"
 
   default = [
+    "roles/cloudkms.admin",
+    "roles/cloudkms.cryptoKeyEncrypterDecrypter",
     "roles/resourcemanager.projectIamAdmin",
     "roles/iam.serviceAccountAdmin",
     "roles/iam.serviceAccountKeyAdmin",
@@ -89,12 +91,12 @@ variable "kms_crypto_key_roles" {
 
 variable "kubernetes_logging_service" {
   type    = "string"
-  default = "logging.googleapis.com/kubernetes"
+  default = "logging.googleapis.com"
 }
 
 variable "kubernetes_monitoring_service" {
   type    = "string"
-  default = "monitoring.googleapis.com/kubernetes"
+  default = "monitoring.googleapis.com"
 }
 
 variable "num_vault_pods" {

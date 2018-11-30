@@ -21,8 +21,6 @@ Engine](https://github.com/kelseyhightower/vault-on-google-kubernetes-engine), b
 
 1. Download, install, and configure the [Google Cloud SDK][sdk]. You will need to configure your default application credentials so Terraform can run. It will run against your default project, but all resources are created in the (new) project that it creates.
 
-1. Install the [kubernetes CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) (aka `kubectl`)
-
 1. Run Terraform:
 
     ```
@@ -55,7 +53,7 @@ Engine](https://github.com/kelseyhightower/vault-on-google-kubernetes-engine), b
     # Make sure you're in the terraform/ directory
     # $ cd terraform/
 
-    $ export VAULT_ADDR="https://$(terraform output address):8200"
+    $ export VAULT_ADDR="https://$(terraform output address)"
     $ export VAULT_TOKEN="$(terraform output token)"
     $ export VAULT_CAPATH="$(cd ../ && pwd)/tls/ca.pem"
     ```
@@ -105,11 +103,6 @@ cfssl, it uses the built-in Terraform functions.
 A: StatefulSets ensure that each pod is deployed in order. This is important for
 the initial bootstrapping process, otherwise there's a race for which Vault
 server initializes first with auto-init.
-
-**Q: Why didn't you use the Terraform Kubernetes provider to create the pods? There's this hacky template_file data source instead...**
-<br>
-A: StatefulSets are not supported in Terraform yet. Should that change, we can
-avoid the shellout to kubectl.
 
 
 [gcs]: https://cloud.google.com/storage

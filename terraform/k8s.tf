@@ -23,75 +23,211 @@ resource "kubernetes_secret" "vault-tls" {
   }
 }
 
-# Write the configmap
-resource "kubernetes_config_map" "vault" {
+# Create the service
+resource "kubernetes_service" "vault-lb" {
   metadata {
     name = "vault"
+
+    labels {
+      app = "vault"
+    }
   }
 
-  data {
-    load_balancer_address = "${google_compute_address.vault.address}"
-    gcs_bucket_name       = "${google_storage_bucket.vault.name}"
-    kms_key_id            = "${google_kms_crypto_key.vault-init.id}"
+  spec {
+    type             = "LoadBalancer"
+    load_balancer_ip = "${google_compute_address.vault.address}"
+
+    selector {
+      app = "vault"
+    }
+
+    port {
+      name        = "vault-https"
+      port        = 443
+      target_port = 8200
+      protocol    = "TCP"
+    }
   }
 }
 
-# Render the YAML file
-data "template_file" "vault" {
-  template = "${file("${path.module}/../k8s/vault.yaml")}"
+# Deploy stateful set
+resource "kubernetes_stateful_set" "vault" {
+  metadata {
+    name = "vault"
 
-  vars {
-    load_balancer_ip     = "${google_compute_address.vault.address}"
-    num_vault_pods       = "${var.num_vault_pods}"
-    vault_container      = "${var.vault_container}"
-    vault_init_container = "${var.vault_init_container}"
+    labels {
+      app = "vault"
+    }
   }
+
+  spec {
+    service_name = "vault"
+    replicas     = "${var.num_vault_servers}"
+
+    selector {
+      match_labels {
+        app = "vault"
+      }
+    }
+
+    template {
+      metadata {
+        labels {
+          app = "vault"
+        }
+      }
+
+      spec {
+        termination_grace_period_seconds = 10
+
+        volume {
+          name = "vault-tls"
+
+          secret {
+            secret_name = "vault-tls"
+          }
+        }
+
+        # vault-init container
+        container {
+          name              = "vault-init"
+          image             = "sethvargo/vault-init:0.1.1"
+          image_pull_policy = "Always"
+
+          resources {
+            requests {
+              cpu    = "100m"
+              memory = "64Mi"
+            }
+          }
+
+          env {
+            name  = "CHECK_INTERVAL"
+            value = "30"
+          }
+
+          env {
+            name  = "GCS_BUCKET_NAME"
+            value = "${google_storage_bucket.vault.name}"
+          }
+
+          env {
+            name  = "KMS_KEY_ID"
+            value = "${google_kms_crypto_key.vault-init.id}"
+          }
+        }
+
+        # vault container
+        container {
+          name              = "vault"
+          image             = "vault:0.11.4"
+          image_pull_policy = "Always"
+
+          args = ["server"]
+
+          security_context {
+            capabilities {
+              add = ["IPC_LOCK"]
+            }
+          }
+
+          port {
+            name           = "vault-port"
+            container_port = 8200
+            protocol       = "TCP"
+          }
+
+          port {
+            name           = "cluster-port"
+            container_port = 8201
+            protocol       = "TCP"
+          }
+
+          resources {
+            requests {
+              cpu    = "500m"
+              memory = "256Mi"
+            }
+          }
+
+          volume_mount {
+            name       = "vault-tls"
+            mount_path = "/etc/vault/tls"
+          }
+
+          env {
+            name = "POD_IP_ADDR"
+
+            value_from {
+              field_ref {
+                field_path = "status.podIP"
+              }
+            }
+          }
+
+          env {
+            name = "VAULT_LOCAL_CONFIG"
+
+            value = <<EOF
+api_addr     = "https://${google_compute_address.vault.address}"
+cluster_addr = "https://$(POD_IP_ADDR):8201"
+
+ui = true
+
+storage "gcs" {
+  bucket     = "${google_storage_bucket.vault.name}"
+  ha_enabled = "true"
 }
 
-# Submit the job - Terraform doesn't yet support StatefulSets, so we have to
-# shell out.
-resource "null_resource" "apply" {
-  triggers {
-    host                   = "${md5(google_container_cluster.vault.endpoint)}"
-    username               = "${md5(google_container_cluster.vault.master_auth.0.username)}"
-    password               = "${md5(google_container_cluster.vault.master_auth.0.password)}"
-    client_certificate     = "${md5(google_container_cluster.vault.master_auth.0.client_certificate)}"
-    client_key             = "${md5(google_container_cluster.vault.master_auth.0.client_key)}"
-    cluster_ca_certificate = "${md5(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
-  }
+listener "tcp" {
+  address       = "0.0.0.0:8200"
+  tls_cert_file = "/etc/vault/tls/vault.crt"
+  tls_key_file  = "/etc/vault/tls/vault.key"
 
-  depends_on = [
-    "kubernetes_secret.vault-tls",
-    "kubernetes_config_map.vault",
-  ]
-
-  provisioner "local-exec" {
-    command = <<EOF
-gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --region="${google_container_cluster.vault.region}" --project="${google_container_cluster.vault.project}"
-
-CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.region}_${google_container_cluster.vault.name}"
-echo '${data.template_file.vault.rendered}' | kubectl apply --context="$CONTEXT" -f -
+  tls_disable_client_certs = true
+}
+>>>>>>> efa90be... Switch to pure Terraform
 EOF
+          }
+
+          readiness_probe {
+            http_get {
+              path   = "/v1/sys/health?standbyok=true"
+              port   = 8200
+              scheme = "HTTPS"
+            }
+
+            initial_delay_seconds = 5
+            period_seconds        = 10
+          }
+        }
+
+        // affinity {
+        //   pod_anti_affinity {
+        //     required_during_scheduling_ignored_during_execution {
+        //       topology_key = "kubernetes.io/hostname"
+        //
+        //       label_selector {
+        //         match_expression {
+        //           key      = "app"
+        //           operator = "In"
+        //           values   = ["vault"]
+        //         }
+        //       }
+        //     }
+        //   }
+        // }
+      }
+    }
+
+    update_strategy {
+      type = "RollingUpdate"
+
+      rolling_update {
+        partition = 1
+      }
+    }
   }
-}
-
-# Wait for all the servers to be ready
-resource "null_resource" "wait-for-finish" {
-  provisioner "local-exec" {
-    command = <<EOF
-for i in $(seq -s " " 1 15); do
-  sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
-    exit 0
-  fi
-done
-
-echo "Pods are not ready after 2m"
-exit 1
-EOF
-  }
-
-  depends_on = ["null_resource.apply"]
 }
 
 # Download the encrypted root token to disk
@@ -100,13 +236,13 @@ data "google_storage_object_signed_url" "root-token" {
   path   = "root-token.enc"
 
   credentials = "${base64decode(google_service_account_key.vault.private_key)}"
+
+  depends_on = ["kubernetes_stateful_set.vault"]
 }
 
 # Download the encrypted file
 data "http" "root-token" {
   url = "${data.google_storage_object_signed_url.root-token.signed_url}"
-
-  depends_on = ["null_resource.wait-for-finish"]
 }
 
 # Decrypt the secret
