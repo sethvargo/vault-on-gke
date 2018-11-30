@@ -26,6 +26,11 @@ variable "instance_type" {
   default = "n1-standard-2"
 }
 
+variable "num_nodes_per_zone" {
+  type    = "string"
+  default = "1"
+}
+
 variable "service_account_iam_roles" {
   type = "list"
 
