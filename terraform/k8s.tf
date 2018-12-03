@@ -39,8 +39,8 @@ data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
 
   vars {
-    load_balancer_ip  = "${google_compute_address.vault.address}"
-    num_vault_servers = "${var.num_vault_servers}"
+    load_balancer_ip = "${google_compute_address.vault.address}"
+    num_vault_pods   = "${var.num_vault_pods}"
   }
 }
 
@@ -77,7 +77,7 @@ resource "null_resource" "wait-for-finish" {
     command = <<EOF
 for i in $(seq -s " " 1 15); do
   sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_servers} ]; then
+  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
     exit 0
   fi
 done

@@ -25,7 +25,7 @@ metadata:
     app: vault
 spec:
   serviceName: vault
-  replicas: ${num_vault_servers}
+  replicas: ${num_vault_pods}
   selector:
     matchLabels:
       app: vault

@@ -87,7 +87,7 @@ variable "kubernetes_monitoring_service" {
   default = "monitoring.googleapis.com/kubernetes"
 }
 
-variable "num_vault_servers" {
+variable "num_vault_pods" {
   type    = "string"
   default = "3"
 }
