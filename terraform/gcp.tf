@@ -110,11 +110,13 @@ resource "google_kms_crypto_key_iam_member" "vault-init" {
 
 # Get latest cluster version
 data "google_container_engine_versions" "versions" {
+  project = "${google_project.vault.project_id}"
   zone = "${var.zone}"
 }
 
 # Create the GKE cluster
 resource "google_container_cluster" "vault" {
+
   name    = "vault"
   project = "${google_project.vault.project_id}"
   zone    = "${var.zone}"
@@ -127,6 +129,8 @@ resource "google_container_cluster" "vault" {
   logging_service    = "${var.kubernetes_logging_service}"
   monitoring_service = "${var.kubernetes_monitoring_service}"
 
+  enable_legacy_abac = false
+
   node_config {
     machine_type    = "${var.instance_type}"
     service_account = "${google_service_account.vault-server.email}"
@@ -135,7 +139,38 @@ resource "google_container_cluster" "vault" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
 
+    labels {
+      service = "vault"
+    }
+
     tags = ["vault"]
+  }
+
+  addons_config {
+    kubernetes_dashboard {
+      disabled = true
+    }
+    network_policy_config {
+      disabled = false
+    }
+  }
+
+  master_auth {
+    username = "" # Empty to disable
+    password = "" # Empty to disable
+    client_certificate_config {
+      issue_client_certificate = false
+    }
+  }
+
+  network_policy {
+    enabled = true
+  }
+
+  maintenance_policy {
+    daily_maintenance_window {
+      start_time = "${var.daily_maintenance_window}"
+    }
   }
 
   depends_on = [

@@ -26,6 +26,11 @@ variable "instance_type" {
   default = "n1-standard-2"
 }
 
+variable "daily_maintenance_window" {
+  type    = "string"
+  default = "06:00"
+}
+
 variable "service_account_iam_roles" {
   type = "list"
 
