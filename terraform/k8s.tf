@@ -63,9 +63,9 @@ resource "null_resource" "apply" {
 
   provisioner "local-exec" {
     command = <<EOF
-gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --zone="${google_container_cluster.vault.zone}" --project="${google_container_cluster.vault.project}"
+gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --region="${google_container_cluster.vault.region}" --project="${google_container_cluster.vault.project}"
 
-CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.zone}_${google_container_cluster.vault.name}"
+CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.region}_${google_container_cluster.vault.name}"
 echo '${data.template_file.vault.rendered}' | kubectl apply --context="$CONTEXT" -f -
 EOF
   }
