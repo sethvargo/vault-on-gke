@@ -48,7 +48,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: vault-init
-        image: registry.hub.docker.com/sethvargo/vault-init:0.1.1
+        image: ${vault_init_container}
         imagePullPolicy: Always
         resources:
           requests:
@@ -68,7 +68,7 @@ spec:
               name: vault
               key: kms_key_id
       - name: vault
-        image: registry.hub.docker.com/library/vault:0.11.4
+        image: ${vault_container}
         imagePullPolicy: Always
         args: ['server']
         securityContext:

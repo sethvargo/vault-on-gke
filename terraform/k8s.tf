@@ -39,8 +39,10 @@ data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
 
   vars {
-    load_balancer_ip = "${google_compute_address.vault.address}"
-    num_vault_pods   = "${var.num_vault_pods}"
+    load_balancer_ip     = "${google_compute_address.vault.address}"
+    num_vault_pods       = "${var.num_vault_pods}"
+    vault_container      = "${var.vault_container}"
+    vault_init_container = "${var.vault_init_container}"
   }
 }
 
