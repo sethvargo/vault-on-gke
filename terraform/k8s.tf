@@ -39,8 +39,10 @@ data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
 
   vars {
-    load_balancer_ip  = "${google_compute_address.vault.address}"
-    num_vault_servers = "${var.num_vault_servers}"
+    load_balancer_ip     = "${google_compute_address.vault.address}"
+    num_vault_pods       = "${var.num_vault_pods}"
+    vault_container      = "${var.vault_container}"
+    vault_init_container = "${var.vault_init_container}"
   }
 }
 
@@ -63,9 +65,9 @@ resource "null_resource" "apply" {
 
   provisioner "local-exec" {
     command = <<EOF
-gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --zone="${google_container_cluster.vault.zone}" --project="${google_container_cluster.vault.project}"
+gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --region="${google_container_cluster.vault.region}" --project="${google_container_cluster.vault.project}"
 
-CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.zone}_${google_container_cluster.vault.name}"
+CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.region}_${google_container_cluster.vault.name}"
 echo '${data.template_file.vault.rendered}' | kubectl apply --context="$CONTEXT" -f -
 EOF
   }
@@ -77,7 +79,7 @@ resource "null_resource" "wait-for-finish" {
     command = <<EOF
 for i in $(seq -s " " 1 15); do
   sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_servers} ]; then
+  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
     exit 0
   fi
 done

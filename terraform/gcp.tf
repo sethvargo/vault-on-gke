@@ -1,14 +1,13 @@
 # This file contains all the interactions with Google Cloud
 provider "google" {
   region  = "${var.region}"
-  zone    = "${var.zone}"
   project = "${var.project}"
 }
 
 # Generate a random id for the project - GCP projects must have globally
 # unique names
 resource "random_id" "random" {
-  prefix      = "vault-"
+  prefix      = "${var.project_prefix}"
   byte_length = "8"
 }
 
@@ -111,7 +110,7 @@ resource "google_kms_crypto_key_iam_member" "vault-init" {
 # Get latest cluster version
 data "google_container_engine_versions" "versions" {
   project = "${google_project.vault.project_id}"
-  zone = "${var.zone}"
+  region  = "${var.region}"
 }
 
 # Create the GKE cluster
@@ -119,9 +118,9 @@ resource "google_container_cluster" "vault" {
 
   name    = "vault"
   project = "${google_project.vault.project_id}"
-  zone    = "${var.zone}"
+  region  = "${var.region}"
 
-  initial_node_count = "${var.num_vault_servers}"
+  initial_node_count = "${var.num_nodes_per_zone}"
 
   min_master_version = "${data.google_container_engine_versions.versions.latest_master_version}"
   node_version       = "${data.google_container_engine_versions.versions.latest_node_version}"
@@ -200,8 +199,4 @@ output "project" {
 
 output "region" {
   value = "${var.region}"
-}
-
-output "zone" {
-  value = "${var.zone}"
 }
