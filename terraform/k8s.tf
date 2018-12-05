@@ -1,12 +1,14 @@
+# Query the client configuration for our current service account, which shoudl
+# have permission to talk to the GKE cluster since it created it.
+data "google_client_config" "current" {}
+
 # This file contains all the interactions with Kubernetes
 provider "kubernetes" {
-  host     = "${google_container_cluster.vault.endpoint}"
-  username = "${google_container_cluster.vault.master_auth.0.username}"
-  password = "${google_container_cluster.vault.master_auth.0.password}"
+  load_config_file = false
+  host             = "${google_container_cluster.vault.endpoint}"
 
-  client_certificate     = "${base64decode(google_container_cluster.vault.master_auth.0.client_certificate)}"
-  client_key             = "${base64decode(google_container_cluster.vault.master_auth.0.client_key)}"
   cluster_ca_certificate = "${base64decode(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
+  token                  = "${data.google_client_config.current.access_token}"
 }
 
 # Write the secret

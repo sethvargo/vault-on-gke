@@ -127,6 +127,10 @@ resource "google_container_cluster" "vault" {
   logging_service    = "${var.kubernetes_logging_service}"
   monitoring_service = "${var.kubernetes_monitoring_service}"
 
+  # Disable legacy ACLs. The default is false, but explicitly marking it false
+  # here as well.
+  enable_legacy_abac = false
+
   node_config {
     machine_type    = "${var.instance_type}"
     service_account = "${google_service_account.vault-server.email}"
@@ -135,7 +139,52 @@ resource "google_container_cluster" "vault" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
 
+    labels {
+      service = "vault"
+    }
+
     tags = ["vault"]
+
+    # Protect node metadata
+    workload_metadata_config {
+      node_metadata = "SECURE"
+    }
+  }
+
+  addons_config {
+    # Disable the Kubernetes dashboard, which is often an attack vector. The
+    # cluster can still be managed via the GKE UI.
+    kubernetes_dashboard {
+      disabled = true
+    }
+
+    # Enable network policy configurations (like Calico).
+    network_policy_config {
+      disabled = false
+    }
+  }
+
+  # Disable basic authentication and cert-based authentication.
+  master_auth {
+    username = ""
+    password = ""
+
+    client_certificate_config {
+      issue_client_certificate = false
+    }
+  }
+
+  # Enable network policy configurations (like Calico) - for some reason this
+  # has to be in here twice.
+  network_policy {
+    enabled = true
+  }
+
+  # Set the maintenance window.
+  maintenance_policy {
+    daily_maintenance_window {
+      start_time = "${var.daily_maintenance_window}"
+    }
   }
 
   depends_on = [
