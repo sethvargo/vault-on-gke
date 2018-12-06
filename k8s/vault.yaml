@@ -48,27 +48,19 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
       - name: vault-init
-        image: ${vault_init_container}
+        image: "${vault_init_container}"
         imagePullPolicy: Always
         resources:
           requests:
             cpu: '100m'
             memory: '64Mi'
         env:
-        - name: CHECK_INTERVAL
-          value: "30"
         - name: GCS_BUCKET_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: vault
-              key: gcs_bucket_name
+          value: "${gcs_bucket_name}"
         - name: KMS_KEY_ID
-          valueFrom:
-            configMapKeyRef:
-              name: vault
-              key: kms_key_id
+          value: "projects/${project}/locations/${kms_region}/keyRings/${kms_key_ring}/cryptoKeys/${kms_crypto_key}"
       - name: vault
-        image: ${vault_container}
+        image: "${vault_container}"
         imagePullPolicy: Always
         args: ['server']
         securityContext:
@@ -93,16 +85,6 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: status.podIP
-        - name: LOAD_BALANCER_ADDR
-          valueFrom:
-            configMapKeyRef:
-              name: vault
-              key: load_balancer_address
-        - name: GCS_BUCKET_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: vault
-              key: gcs_bucket_name
         - name: VAULT_LOCAL_CONFIG
           value: |
             api_addr     = "https://${load_balancer_ip}"
@@ -111,7 +93,7 @@ spec:
             ui = true
 
             storage "gcs" {
-              bucket     = "$(GCS_BUCKET_NAME)"
+              bucket     = "${gcs_bucket_name}"
               ha_enabled = "true"
             }
 

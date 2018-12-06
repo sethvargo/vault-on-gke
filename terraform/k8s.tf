@@ -23,19 +23,6 @@ resource "kubernetes_secret" "vault-tls" {
   }
 }
 
-# Write the configmap
-resource "kubernetes_config_map" "vault" {
-  metadata {
-    name = "vault"
-  }
-
-  data {
-    load_balancer_address = "${google_compute_address.vault.address}"
-    gcs_bucket_name       = "${google_storage_bucket.vault.name}"
-    kms_key_id            = "${google_kms_crypto_key.vault-init.id}"
-  }
-}
-
 # Render the YAML file
 data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
@@ -45,6 +32,14 @@ data "template_file" "vault" {
     num_vault_pods       = "${var.num_vault_pods}"
     vault_container      = "${var.vault_container}"
     vault_init_container = "${var.vault_init_container}"
+
+    project = "${google_kms_key_ring.vault.project}"
+
+    kms_region     = "${google_kms_key_ring.vault.location}"
+    kms_key_ring   = "${google_kms_key_ring.vault.name}"
+    kms_crypto_key = "${google_kms_crypto_key.vault-init.name}"
+
+    gcs_bucket_name = "${google_storage_bucket.vault.name}"
   }
 }
 

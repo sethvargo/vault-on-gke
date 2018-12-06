@@ -109,7 +109,7 @@ EOF
 
 variable "vault_container" {
   type    = "string"
-  default = "vault:0.11.4"
+  default = "vault:1.0.0"
 
   description = <<EOF
 Name of the Vault container image to deploy. This can be specified like
@@ -119,7 +119,7 @@ EOF
 
 variable "vault_init_container" {
   type    = "string"
-  default = "sethvargo/vault-init:0.1.1"
+  default = "sethvargo/vault-init:1.0.0"
 
   description = <<EOF
 Name of the Vault init container image to deploy. This can be specified like
