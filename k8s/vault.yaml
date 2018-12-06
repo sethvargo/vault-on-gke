@@ -92,6 +92,13 @@ spec:
 
             ui = true
 
+            seal "gcpckms" {
+              project    = "${project}"
+              region     = "${kms_region}"
+              key_ring   = "${kms_key_ring}"
+              crypto_key = "${kms_crypto_key}"
+            }
+
             storage "gcs" {
               bucket     = "${gcs_bucket_name}"
               ha_enabled = "true"
