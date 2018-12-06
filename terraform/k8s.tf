@@ -57,7 +57,6 @@ resource "null_resource" "apply" {
 
   depends_on = [
     "kubernetes_secret.vault-tls",
-    "kubernetes_config_map.vault",
   ]
 
   provisioner "local-exec" {
