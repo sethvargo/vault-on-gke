@@ -12,7 +12,7 @@ spec:
     app: vault
   ports:
   - name: vault-port
-    port: 8200
+    port: 443
     targetPort: 8200
     protocol: TCP
 
@@ -105,7 +105,7 @@ spec:
               key: gcs_bucket_name
         - name: VAULT_LOCAL_CONFIG
           value: |
-            api_addr     = "https://$(LOAD_BALANCER_ADDR):8200"
+            api_addr     = "https://${load_balancer_ip}"
             cluster_addr = "https://$(POD_IP_ADDR):8201"
 
             ui = true

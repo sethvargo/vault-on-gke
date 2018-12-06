@@ -55,7 +55,7 @@ Engine](https://github.com/kelseyhightower/vault-on-google-kubernetes-engine), b
     # Make sure you're in the terraform/ directory
     # $ cd terraform/
 
-    $ export VAULT_ADDR="https://$(terraform output address):8200"
+    $ export VAULT_ADDR="https://$(terraform output address)"
     $ export VAULT_TOKEN="$(terraform output token)"
     $ export VAULT_CAPATH="$(cd ../ && pwd)/tls/ca.pem"
     ```
