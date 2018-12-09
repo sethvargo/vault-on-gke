@@ -1,3 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: vault-ingress
+  annotations:
+    kubernetes.io/ingress.allow-http: "false"
+    kubernetes.io/ingress.global-static-ip-name: "${static_ip_name}"
+spec:
+  tls:
+  - secretName: vault-tls
+  backend:
+    serviceName: vault
+    servicePort: 8200
 ---
 apiVersion: v1
 kind: Service
@@ -5,14 +18,15 @@ metadata:
   name: vault
   labels:
     app: vault
+  annotations:
+    cloud.google.com/app-protocols: '"'"'{"vault-port":"HTTPS"}'"'"'
 spec:
-  type: LoadBalancer
-  loadBalancerIP: ${load_balancer_ip}
+  type: NodePort
   selector:
     app: vault
   ports:
   - name: vault-port
-    port: 443
+    port: 8200
     targetPort: 8200
     protocol: TCP
 
@@ -106,8 +120,8 @@ spec:
 
             listener "tcp" {
               address       = "0.0.0.0:8200"
-              tls_cert_file = "/etc/vault/tls/vault.crt"
-              tls_key_file  = "/etc/vault/tls/vault.key"
+              tls_cert_file = "/etc/vault/tls/tls.crt"
+              tls_key_file  = "/etc/vault/tls/tls.key"
 
               tls_disable_client_certs = true
             }

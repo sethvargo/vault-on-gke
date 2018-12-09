@@ -41,6 +41,41 @@ will be created.
 EOF
 }
 
+variable "static_ip_name" {
+  type    = "string"
+  default = "vault-public-ip"
+  description = <<EOF
+The name of the external IP address reserved for the Global Load Balancer.
+EOF
+}
+
+variable "vault_hostnames" {
+  type = "list"
+
+  default = [
+    "vault",
+    "vault.local",
+    "vault.default.svc.cluster.local",
+    "localhost",
+  ]
+  description = <<EOF
+The hostnames needed in the TLS certificates for proper functionality.  To add
+additional hostnames, add them to the custom_vault_hostnames list.
+EOF
+}
+
+variable "custom_vault_hostnames" {
+  type = "list"
+
+  default = []
+  description = <<EOF
+Additional SANs to be added to the TLS keypair to support custom domain names.
+e.g. vault.mydomain.com
+Note: You are responsible for configuring DNS records to point to the IP
+reserved by the static_ip_name resource.
+EOF
+}
+
 variable "daily_maintenance_window" {
   type    = "string"
   default = "06:00"

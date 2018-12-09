@@ -18,8 +18,8 @@ resource "kubernetes_secret" "vault-tls" {
   }
 
   data {
-    "vault.crt" = "${tls_locally_signed_cert.vault.cert_pem}\n${tls_self_signed_cert.vault-ca.cert_pem}"
-    "vault.key" = "${tls_private_key.vault.private_key_pem}"
+    "tls.crt" = "${tls_locally_signed_cert.vault.cert_pem}\n${tls_self_signed_cert.vault-ca.cert_pem}"
+    "tls.key" = "${tls_private_key.vault.private_key_pem}"
   }
 }
 
@@ -28,7 +28,8 @@ data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
 
   vars {
-    load_balancer_ip     = "${google_compute_address.vault.address}"
+    load_balancer_ip     = "${google_compute_global_address.vault.address}"
+    static_ip_name       = "${google_compute_global_address.vault.name}"
     num_vault_pods       = "${var.num_vault_pods}"
     vault_container      = "${var.vault_container}"
     vault_init_container = "${var.vault_init_container}"
@@ -69,22 +70,22 @@ EOF
   }
 }
 
-# Wait for all the servers to be ready
+# Wait for the Load Balancer and Pods to be ready
 resource "null_resource" "wait-for-finish" {
   provisioner "local-exec" {
     command = <<EOF
-for i in $(seq -s " " 1 15); do
+for i in $(seq -s " " 1 40); do
   sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
+  curl -s --cacert ../tls/ca.pem https://${google_compute_global_address.vault.address}/v1/sys/health
+  if [[ $? -eq 0 ]]; then
     exit 0
   fi
 done
 
-echo "Pods are not ready after 2m"
+echo "Vault pods and load balancer are not ready after 14m"
 exit 1
 EOF
   }
-
   depends_on = ["null_resource.apply"]
 }
 

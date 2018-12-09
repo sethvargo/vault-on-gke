@@ -34,7 +34,7 @@ resource "tls_private_key" "vault" {
   rsa_bits  = "2048"
 
   provisioner "local-exec" {
-    command = "echo '${self.private_key_pem}' > ../tls/vault.key && chmod 0600 ../tls/vault.key"
+    command = "echo '${self.private_key_pem}' > ../tls/tls.key && chmod 0600 ../tls/tls.key"
   }
 }
 
@@ -43,16 +43,11 @@ resource "tls_cert_request" "vault" {
   key_algorithm   = "${tls_private_key.vault.algorithm}"
   private_key_pem = "${tls_private_key.vault.private_key_pem}"
 
-  dns_names = [
-    "vault",
-    "vault.local",
-    "vault.default.svc.cluster.local",
-    "localhost",
-  ]
+  dns_names = ["${concat(var.vault_hostnames, var.custom_vault_hostnames)}"]
 
   ip_addresses = [
     "127.0.0.1",
-    "${google_compute_address.vault.address}",
+    "${google_compute_global_address.vault.address}",
   ]
 
   subject {
@@ -80,6 +75,6 @@ resource "tls_locally_signed_cert" "vault" {
   ]
 
   provisioner "local-exec" {
-    command = "echo '${self.cert_pem}' > ../tls/vault.pem && echo '${tls_self_signed_cert.vault-ca.cert_pem}' >> ../tls/vault.pem && chmod 0600 ../tls/vault.pem"
+    command = "echo '${self.cert_pem}' > ../tls/tls.pem && echo '${tls_self_signed_cert.vault-ca.cert_pem}' >> ../tls/tls.pem && chmod 0600 ../tls/tls.pem"
   }
 }

@@ -196,16 +196,15 @@ resource "google_container_cluster" "vault" {
 }
 
 # Provision IP
-resource "google_compute_address" "vault" {
-  name    = "vault-lb"
-  region  = "${var.region}"
+resource "google_compute_global_address" "vault" {
+  name    = "${var.static_ip_name}"
   project = "${google_project.vault.project_id}"
 
   depends_on = ["google_project_service.service"]
 }
 
 output "address" {
-  value = "${google_compute_address.vault.address}"
+  value = "${google_compute_global_address.vault.address}"
 }
 
 output "project" {
