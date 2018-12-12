@@ -11,15 +11,28 @@ provider "kubernetes" {
   token                  = "${data.google_client_config.current.access_token}"
 }
 
-# Write the secret
-resource "kubernetes_secret" "vault-tls" {
+# Write the internal secret
+resource "kubernetes_secret" "vault-internal-tls" {
   metadata {
-    name = "vault-tls"
+    name = "vault-internal-tls"
   }
 
   data {
-    "tls.crt" = "${tls_locally_signed_cert.vault.cert_pem}\n${tls_self_signed_cert.vault-ca.cert_pem}"
-    "tls.key" = "${tls_private_key.vault.private_key_pem}"
+    "vault_internal.crt" = "${tls_locally_signed_cert.vault_internal.cert_pem}\n${tls_self_signed_cert.vault-ca.cert_pem}"
+    "vault_internal.key" = "${tls_private_key.vault_internal.private_key_pem}"
+  }
+}
+
+# Write the external secret
+# The GCLB expects the secret data names to be "tls.crt" and "tls.key"
+resource "kubernetes_secret" "vault-external-tls" {
+  metadata {
+    name = "vault-external-tls"
+  }
+
+  data {
+    "tls.crt" = "${tls_locally_signed_cert.vault_external.cert_pem}\n${tls_self_signed_cert.vault-ca.cert_pem}"
+    "tls.key" = "${tls_private_key.vault_external.private_key_pem}"
   }
 }
 
@@ -49,15 +62,11 @@ data "template_file" "vault" {
 resource "null_resource" "apply" {
   triggers {
     host                   = "${md5(google_container_cluster.vault.endpoint)}"
-    username               = "${md5(google_container_cluster.vault.master_auth.0.username)}"
-    password               = "${md5(google_container_cluster.vault.master_auth.0.password)}"
-    client_certificate     = "${md5(google_container_cluster.vault.master_auth.0.client_certificate)}"
-    client_key             = "${md5(google_container_cluster.vault.master_auth.0.client_key)}"
-    cluster_ca_certificate = "${md5(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
   }
 
   depends_on = [
-    "kubernetes_secret.vault-tls",
+    "kubernetes_secret.vault-internal-tls",
+    "kubernetes_secret.vault-external-tls",
   ]
 
   provisioner "local-exec" {
