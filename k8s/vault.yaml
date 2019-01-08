@@ -8,6 +8,7 @@ metadata:
 spec:
   type: LoadBalancer
   loadBalancerIP: ${load_balancer_ip}
+  externalTrafficPolicy: Local
   selector:
     app: vault
   ports:
@@ -43,29 +44,35 @@ spec:
                 matchExpressions:
                 - key: app
                   operator: In
-                  values: ['vault']
+                  values: ["vault"]
               topologyKey: kubernetes.io/hostname
       terminationGracePeriodSeconds: 10
       containers:
       - name: vault-init
         image: "${vault_init_container}"
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         resources:
           requests:
-            cpu: '100m'
-            memory: '64Mi'
+            cpu: "100m"
+            memory: "64Mi"
         env:
         - name: GCS_BUCKET_NAME
           value: "${gcs_bucket_name}"
         - name: KMS_KEY_ID
           value: "projects/${project}/locations/${kms_region}/keyRings/${kms_key_ring}/cryptoKeys/${kms_crypto_key}"
+        - name: VAULT_ADDR
+          value: "http://127.0.0.1:8200"
+        - name: VAULT_SECRET_SHARES
+          value: "${vault_recovery_shares}"
+        - name: VAULT_SECRET_THRESHOLD
+          value: "${vault_recovery_threshold}"
       - name: vault
         image: "${vault_container}"
-        imagePullPolicy: Always
-        args: ['server']
+        imagePullPolicy: IfNotPresent
+        args: ["server"]
         securityContext:
           capabilities:
-            add: ['IPC_LOCK']
+            add: ["IPC_LOCK"]
         ports:
         - containerPort: 8200
           name: vault-port
@@ -75,12 +82,14 @@ spec:
           protocol: TCP
         resources:
           requests:
-            cpu: '500m'
-            memory: '256Mi'
+            cpu: "500m"
+            memory: "256Mi"
         volumeMounts:
         - name: vault-tls
           mountPath: /etc/vault/tls
         env:
+        - name: VAULT_ADDR
+          value: "http://127.0.0.1:8200"
         - name: POD_IP_ADDR
           valueFrom:
             fieldRef:
@@ -89,6 +98,8 @@ spec:
           value: |
             api_addr     = "https://${load_balancer_ip}"
             cluster_addr = "https://$(POD_IP_ADDR):8201"
+
+            log_level = "warn"
 
             ui = true
 
@@ -105,7 +116,12 @@ spec:
             }
 
             listener "tcp" {
-              address       = "0.0.0.0:8200"
+              address     = "127.0.0.1:8200"
+              tls_disable = "true"
+            }
+
+            listener "tcp" {
+              address       = "$(POD_IP_ADDR):8200"
               tls_cert_file = "/etc/vault/tls/vault.crt"
               tls_key_file  = "/etc/vault/tls/vault.key"
 

@@ -39,6 +39,14 @@ resource "google_project_iam_member" "service-account" {
   member  = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
+# Add user-specified roles
+resource "google_project_iam_member" "service-account-custom" {
+  count   = "${length(var.service_account_custom_iam_roles)}"
+  project = "${google_project.vault.project_id}"
+  role    = "${element(var.service_account_custom_iam_roles, count.index)}"
+  member  = "serviceAccount:${google_service_account.vault-server.email}"
+}
+
 # Enable required services on the project
 resource "google_project_service" "service" {
   count   = "${length(var.project_services)}"
@@ -68,7 +76,7 @@ resource "google_storage_bucket" "vault" {
     }
 
     condition {
-      num_newer_versions = 3
+      num_newer_versions = 1
     }
   }
 
@@ -99,11 +107,29 @@ resource "google_kms_crypto_key" "vault-init" {
   rotation_period = "604800s"
 }
 
+# Create a custom IAM role with the most minimal set of permissions for the
+# KMS auto-unsealer. Once hashicorp/vault#5999 is merged, this can be replaced
+# with the built-in roles/cloudkms.cryptoKeyEncrypterDecryptor role.
+resource "google_project_iam_custom_role" "vault-seal-kms" {
+  project     = "${google_project.vault.project_id}"
+  role_id     = "kmsEncrypterDecryptorViewer"
+  title       = "KMS Encrypter Decryptor Viewer"
+  description = "KMS crypto key permissions to encrypt, decrypt, and view key data"
+
+  permissions = [
+    "cloudkms.cryptoKeyVersions.useToEncrypt",
+    "cloudkms.cryptoKeyVersions.useToDecrypt",
+
+    # This is required until hashicorp/vault#5999 is merged. The auto-unsealer
+    # attempts to read the key, which requires this additional permission.
+    "cloudkms.cryptoKeys.get",
+  ]
+}
+
 # Grant service account access to the key
 resource "google_kms_crypto_key_iam_member" "vault-init" {
-  count         = "${length(var.kms_crypto_key_roles)}"
   crypto_key_id = "${google_kms_crypto_key.vault-init.id}"
-  role          = "${element(var.kms_crypto_key_roles, count.index)}"
+  role          = "projects/${google_project.vault.project_id}/roles/${google_project_iam_custom_role.vault-seal-kms.role_id}"
   member        = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
@@ -119,7 +145,7 @@ resource "google_container_cluster" "vault" {
   project = "${google_project.vault.project_id}"
   region  = "${var.region}"
 
-  initial_node_count = "${var.num_nodes_per_zone}"
+  initial_node_count = "${var.kubernetes_nodes_per_zone}"
 
   min_master_version = "${data.google_container_engine_versions.versions.latest_master_version}"
   node_version       = "${data.google_container_engine_versions.versions.latest_node_version}"
@@ -132,7 +158,7 @@ resource "google_container_cluster" "vault" {
   enable_legacy_abac = false
 
   node_config {
-    machine_type    = "${var.instance_type}"
+    machine_type    = "${var.kubernetes_instance_type}"
     service_account = "${google_service_account.vault-server.email}"
 
     oauth_scopes = [
@@ -183,7 +209,7 @@ resource "google_container_cluster" "vault" {
   # Set the maintenance window.
   maintenance_policy {
     daily_maintenance_window {
-      start_time = "${var.daily_maintenance_window}"
+      start_time = "${var.kubernetes_daily_maintenance_window}"
     }
   }
 
@@ -192,6 +218,7 @@ resource "google_container_cluster" "vault" {
     "google_kms_crypto_key_iam_member.vault-init",
     "google_storage_bucket_iam_member.vault-server",
     "google_project_iam_member.service-account",
+    "google_project_iam_member.service-account-custom",
   ]
 }
 

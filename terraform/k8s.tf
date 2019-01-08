@@ -28,10 +28,12 @@ data "template_file" "vault" {
   template = "${file("${path.module}/../k8s/vault.yaml")}"
 
   vars {
-    load_balancer_ip     = "${google_compute_address.vault.address}"
-    num_vault_pods       = "${var.num_vault_pods}"
-    vault_container      = "${var.vault_container}"
-    vault_init_container = "${var.vault_init_container}"
+    load_balancer_ip         = "${google_compute_address.vault.address}"
+    num_vault_pods           = "${var.num_vault_pods}"
+    vault_container          = "${var.vault_container}"
+    vault_init_container     = "${var.vault_init_container}"
+    vault_recovery_shares    = "${var.vault_recovery_shares}"
+    vault_recovery_threshold = "${var.vault_recovery_threshold}"
 
     project = "${google_kms_key_ring.vault.project}"
 
@@ -88,33 +90,33 @@ EOF
   depends_on = ["null_resource.apply"]
 }
 
-# Download the encrypted root token to disk
-data "google_storage_object_signed_url" "root-token" {
+# Build the URL for the keys on GCS
+data "google_storage_object_signed_url" "keys" {
   bucket = "${google_storage_bucket.vault.name}"
   path   = "root-token.enc"
 
   credentials = "${base64decode(google_service_account_key.vault.private_key)}"
-}
-
-# Download the encrypted file
-data "http" "root-token" {
-  url = "${data.google_storage_object_signed_url.root-token.signed_url}"
 
   depends_on = ["null_resource.wait-for-finish"]
 }
 
-# Decrypt the secret
-data "google_kms_secret" "root-token" {
-  crypto_key = "${google_kms_crypto_key.vault-init.id}"
-  ciphertext = "${data.http.root-token.body}"
+# Download the encrypted recovery unseal keys and initial root token from GCS
+data "http" "keys" {
+  url = "${data.google_storage_object_signed_url.keys.signed_url}"
 }
 
-output "token" {
-  value = "${data.google_kms_secret.root-token.plaintext}"
+# Decrypt the values
+data "google_kms_secret" "keys" {
+  crypto_key = "${google_kms_crypto_key.vault-init.id}"
+  ciphertext = "${data.http.keys.body}"
+}
+
+# Output the initial root token
+output "root_token" {
+  value = "${data.google_kms_secret.keys.plaintext}"
 }
 
 # Uncomment this if you want to decrypt the token yourself
-# output "token_decrypt_command" {
+# output "root_token_decrypt_command" {
 #   value = "gsutil cat gs://${google_storage_bucket.vault.name}/root-token.enc | base64 --decode | gcloud kms decrypt --project ${google_project.vault.project_id} --location ${var.region} --keyring ${google_kms_key_ring.vault.name} --key ${google_kms_crypto_key.vault-init.name} --ciphertext-file - --plaintext-file -"
 # }
-
