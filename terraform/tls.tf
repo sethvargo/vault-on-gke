@@ -47,11 +47,9 @@ resource "tls_cert_request" "vault" {
     "vault",
     "vault.local",
     "vault.default.svc.cluster.local",
-    "localhost",
   ]
 
   ip_addresses = [
-    "127.0.0.1",
     "${google_compute_address.vault.address}",
   ]
 
