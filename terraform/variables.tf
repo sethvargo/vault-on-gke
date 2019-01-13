@@ -104,6 +104,7 @@ variable "project_services" {
     "cloudkms.googleapis.com",
     "cloudresourcemanager.googleapis.com",
     "container.googleapis.com",
+    "compute.googleapis.com",
     "iam.googleapis.com",
     "logging.googleapis.com",
     "monitoring.googleapis.com",
@@ -136,6 +137,77 @@ variable "kubernetes_monitoring_service" {
   description = <<EOF
 Name of the monitoring service to use. By default this uses the new
 Stackdriver GKE beta.
+EOF
+}
+
+variable "kubernetes_network_ipv4_cidr" {
+  type    = "string"
+  default = "10.0.96.0/22"
+
+  description = <<EOF
+IP CIDR block for the subnetwork. This must be at least /22 and cannot overlap
+with any other IP CIDR ranges.
+EOF
+}
+
+variable "kubernetes_pods_ipv4_cidr" {
+  type    = "string"
+  default = "10.0.92.0/22"
+
+  description = <<EOF
+IP CIDR block for pods. This must be at least /22 and cannot overlap with any
+other IP CIDR ranges.
+EOF
+}
+
+variable "kubernetes_services_ipv4_cidr" {
+  type    = "string"
+  default = "10.0.88.0/22"
+
+  description = <<EOF
+IP CIDR block for services. This must be at least /22 and cannot overlap with
+any other IP CIDR ranges.
+EOF
+}
+
+variable "kubernetes_masters_ipv4_cidr" {
+  type    = "string"
+  default = "10.0.82.0/28"
+
+  description = <<EOF
+IP CIDR block for the Kubernetes master nodes. This must be exactly /28 and
+cannot overlap with any other IP CIDR ranges.
+EOF
+}
+
+variable "kubernetes_master_authorized_networks" {
+  type = "list"
+
+  default = [
+    {
+      display_name = "Anyone"
+      cidr_block   = "0.0.0.0/0"
+    },
+  ]
+
+  description = <<EOF
+List of CIDR blocks to allow access to the master's API endpoint. This is
+specified as a slice of objects, where each object has a display_name and
+cidr_block attribute:
+
+[
+  {
+    display_name = "My range"
+    cidr_block   = "1.2.3.4/32"
+  },
+  {
+    display_name = "My other range"
+    cidr_block   = "5.6.7.0/24"
+  }
+]
+
+The default behavior is to allow anyone (0.0.0.0/0) access to the endpoint.
+You should restrict access to external IPs that need to access the cluster.
 EOF
 }
 

@@ -164,6 +164,8 @@ $ terraform destroy
 
 ## Security
 
+### Root Token
+
 This set of Terraform configurations is designed to make your life easy. It's
 a best-practices setup for Vault, but also aids in the retrieval of the initial
 root token. **The decrypted initial root token will be stored in your state file!**
@@ -177,6 +179,17 @@ credentials.
 ```text
 $ $(terraform output token_decrypt_command)
 ```
+
+### Private Cluster
+
+The Kubernetes cluster is a "private" cluster, meaning nodes do not have
+publicly exposed IP addresses, and pods are only publicly accessible if
+exposed through a load balancer service. Additionaly, only authorzied IP CIDR
+blocks are able to communicate with the Kubernetes master nodes.
+
+The default allowed CIDR is `0.0.0.0/0 (anyone)`. **You should restrict this
+CIDR to the IP address(es) which will access the nodes!**.
+
 
 ## FAQ
 

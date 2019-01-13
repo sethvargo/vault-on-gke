@@ -133,6 +133,84 @@ resource "google_kms_crypto_key_iam_member" "vault-init" {
   member        = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
+# Create an external NAT IP
+resource "google_compute_address" "vault-nat" {
+  count   = 2
+  name    = "vault-nat-external-${count.index}"
+  project = "${google_project.vault.project_id}"
+  region  = "${var.region}"
+
+  depends_on = [
+    "google_project_service.service",
+  ]
+}
+
+# Create a network for GKE
+resource "google_compute_network" "vault-network" {
+  name                    = "vault-network"
+  project                 = "${google_project.vault.project_id}"
+  auto_create_subnetworks = false
+
+  depends_on = [
+    "google_project_service.service",
+  ]
+}
+
+# Create subnets
+resource "google_compute_subnetwork" "vault-subnetwork" {
+  name          = "vault-subnetwork"
+  project       = "${google_project.vault.project_id}"
+  network       = "${google_compute_network.vault-network.self_link}"
+  region        = "${var.region}"
+  ip_cidr_range = "${var.kubernetes_network_ipv4_cidr}"
+
+  private_ip_google_access = true
+
+  secondary_ip_range {
+    range_name    = "vault-pods"
+    ip_cidr_range = "${var.kubernetes_pods_ipv4_cidr}"
+  }
+
+  secondary_ip_range {
+    range_name    = "vault-svcs"
+    ip_cidr_range = "${var.kubernetes_services_ipv4_cidr}"
+  }
+}
+
+# Create a NAT router so the nodes can reach DockerHub, etc
+resource "google_compute_router" "vault-router" {
+  name    = "vault-router"
+  project = "${google_project.vault.project_id}"
+  region  = "${var.region}"
+  network = "${google_compute_network.vault-network.self_link}"
+
+  bgp {
+    asn = 64514
+  }
+}
+
+resource "google_compute_router_nat" "vault-nat" {
+  name    = "vault-nat-1"
+  project = "${google_project.vault.project_id}"
+  router  = "${google_compute_router.vault-router.name}"
+  region  = "${var.region}"
+
+  nat_ip_allocate_option = "MANUAL_ONLY"
+  nat_ips                = ["${google_compute_address.vault-nat.*.self_link}"]
+
+  source_subnetwork_ip_ranges_to_nat = "LIST_OF_SUBNETWORKS"
+
+  subnetwork {
+    name                    = "${google_compute_subnetwork.vault-subnetwork.self_link}"
+    source_ip_ranges_to_nat = ["PRIMARY_IP_RANGE", "LIST_OF_SECONDARY_IP_RANGES"]
+
+    secondary_ip_range_names = [
+      "${google_compute_subnetwork.vault-subnetwork.secondary_ip_range.0.range_name}",
+      "${google_compute_subnetwork.vault-subnetwork.secondary_ip_range.1.range_name}",
+    ]
+  }
+}
+
 # Get latest cluster version
 data "google_container_engine_versions" "versions" {
   project = "${google_project.vault.project_id}"
@@ -144,6 +222,9 @@ resource "google_container_cluster" "vault" {
   name    = "vault"
   project = "${google_project.vault.project_id}"
   region  = "${var.region}"
+
+  network    = "${google_compute_network.vault-network.self_link}"
+  subnetwork = "${google_compute_subnetwork.vault-subnetwork.self_link}"
 
   initial_node_count = "${var.kubernetes_nodes_per_zone}"
 
@@ -165,6 +246,11 @@ resource "google_container_cluster" "vault" {
       "https://www.googleapis.com/auth/cloud-platform",
     ]
 
+    # Set metadata on the VM to supply more entropy
+    metadata {
+      google-compute-enable-virtio-rng = "true"
+    }
+
     labels {
       service = "vault"
     }
@@ -177,6 +263,7 @@ resource "google_container_cluster" "vault" {
     }
   }
 
+  # Configure various addons
   addons_config {
     # Disable the Kubernetes dashboard, which is often an attack vector. The
     # cluster can still be managed via the GKE UI.
@@ -213,12 +300,37 @@ resource "google_container_cluster" "vault" {
     }
   }
 
+  # Allocate IPs in our subnetwork
+  ip_allocation_policy {
+    cluster_secondary_range_name  = "${google_compute_subnetwork.vault-subnetwork.secondary_ip_range.0.range_name}"
+    services_secondary_range_name = "${google_compute_subnetwork.vault-subnetwork.secondary_ip_range.1.range_name}"
+  }
+
+  # Specify the list of CIDRs which can access the master's API
+  master_authorized_networks_config {
+    cidr_blocks = ["${var.kubernetes_master_authorized_networks}"]
+  }
+
+  # Configure the cluster to be private (not have public facing IPs)
+  private_cluster_config {
+    # This field is misleading. This prevents access to the master API from
+    # any external IP. While that might represent the most secure
+    # configuration, it is not ideal for most setups. As such, we disable the
+    # private endpoint (allow the public endpoint) and restrict which CIDRs
+    # can talk to that endpoint.
+    enable_private_endpoint = false
+
+    enable_private_nodes   = true
+    master_ipv4_cidr_block = "${var.kubernetes_masters_ipv4_cidr}"
+  }
+
   depends_on = [
     "google_project_service.service",
     "google_kms_crypto_key_iam_member.vault-init",
     "google_storage_bucket_iam_member.vault-server",
     "google_project_iam_member.service-account",
     "google_project_iam_member.service-account-custom",
+    "google_compute_router_nat.vault-nat",
   ]
 }
 
