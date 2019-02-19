@@ -4,6 +4,11 @@ provider "google" {
   project = "${var.project}"
 }
 
+provider "google-beta" {
+  region  = "${var.region}"
+  project = "${var.project}"
+}
+
 # Generate a random id for the project - GCP projects must have globally
 # unique names
 resource "random_id" "random" {
@@ -219,6 +224,8 @@ data "google_container_engine_versions" "versions" {
 
 # Create the GKE cluster
 resource "google_container_cluster" "vault" {
+  provider = "google-beta"
+
   name    = "vault"
   project = "${google_project.vault.project_id}"
   region  = "${var.region}"
