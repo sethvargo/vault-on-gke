@@ -20,6 +20,7 @@ resource "kubernetes_secret" "vault-tls" {
   data {
     "vault.crt" = "${tls_locally_signed_cert.vault.cert_pem}\n${tls_self_signed_cert.vault-ca.cert_pem}"
     "vault.key" = "${tls_private_key.vault.private_key_pem}"
+    "ca.crt"    = "${tls_self_signed_cert.vault-ca.cert_pem}"
   }
 }
 
@@ -120,3 +121,4 @@ output "root_token" {
 # output "root_token_decrypt_command" {
 #   value = "gsutil cat gs://${google_storage_bucket.vault.name}/root-token.enc | base64 --decode | gcloud kms decrypt --project ${google_project.vault.project_id} --location ${var.region} --keyring ${google_kms_key_ring.vault.name} --key ${google_kms_crypto_key.vault-init.name} --ciphertext-file - --plaintext-file -"
 # }
+
