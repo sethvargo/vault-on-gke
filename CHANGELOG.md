@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.2] - 2019-02-19
+### Added
+- Include CA cert in configmap
+
+### Changed
+- Choose google vs google-beta provider
+
 ## [0.1.1] - 2019-01-12
 
 ### Added
