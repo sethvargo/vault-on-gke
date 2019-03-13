@@ -16,19 +16,32 @@ resource "random_id" "random" {
   byte_length = "8"
 }
 
-# Create the project
+# Create the project if one isn't specified
 resource "google_project" "vault" {
+  count           = "${var.project != "" ? 0 : 1}"
   name            = "${random_id.random.hex}"
   project_id      = "${random_id.random.hex}"
   org_id          = "${var.org_id}"
   billing_account = "${var.billing_account}"
 }
 
+# Or use an existing project, if defined
+data "google_project" "vault" {
+  count           = "${var.project != "" ? 1 : 0}"
+  project_id      = "${var.project}"
+}
+
+# Obtain the project_id from either the newly created project resource or existing data project resource
+# One will be populated and the other will be null
+locals {
+  vault_project_id = "${join(",",data.google_project.vault.*.project_id)}${join(",",google_project.vault.*.project_id) }"
+}
+
 # Create the vault service account
 resource "google_service_account" "vault-server" {
   account_id   = "vault-server"
   display_name = "Vault Server"
-  project      = "${google_project.vault.project_id}"
+  project      = "${local.vault_project_id}"
 }
 
 # Create a service account key
@@ -39,7 +52,7 @@ resource "google_service_account_key" "vault" {
 # Add the service account to the project
 resource "google_project_iam_member" "service-account" {
   count   = "${length(var.service_account_iam_roles)}"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   role    = "${element(var.service_account_iam_roles, count.index)}"
   member  = "serviceAccount:${google_service_account.vault-server.email}"
 }
@@ -47,7 +60,7 @@ resource "google_project_iam_member" "service-account" {
 # Add user-specified roles
 resource "google_project_iam_member" "service-account-custom" {
   count   = "${length(var.service_account_custom_iam_roles)}"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   role    = "${element(var.service_account_custom_iam_roles, count.index)}"
   member  = "serviceAccount:${google_service_account.vault-server.email}"
 }
@@ -55,7 +68,7 @@ resource "google_project_iam_member" "service-account-custom" {
 # Enable required services on the project
 resource "google_project_service" "service" {
   count   = "${length(var.project_services)}"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   service = "${element(var.project_services, count.index)}"
 
   # Do not disable the service on destroy. On destroy, we are going to
@@ -66,8 +79,8 @@ resource "google_project_service" "service" {
 
 # Create the storage bucket
 resource "google_storage_bucket" "vault" {
-  name          = "${google_project.vault.project_id}-vault-storage"
-  project       = "${google_project.vault.project_id}"
+  name          = "${local.vault_project_id}-vault-storage"
+  project       = "${local.vault_project_id}"
   force_destroy = true
   storage_class = "MULTI_REGIONAL"
 
@@ -100,7 +113,7 @@ resource "google_storage_bucket_iam_member" "vault-server" {
 resource "google_kms_key_ring" "vault" {
   name     = "vault"
   location = "${var.region}"
-  project  = "${google_project.vault.project_id}"
+  project  = "${local.vault_project_id}"
 
   depends_on = ["google_project_service.service"]
 }
@@ -116,7 +129,7 @@ resource "google_kms_crypto_key" "vault-init" {
 # KMS auto-unsealer. Once hashicorp/vault#5999 is merged, this can be replaced
 # with the built-in roles/cloudkms.cryptoKeyEncrypterDecryptor role.
 resource "google_project_iam_custom_role" "vault-seal-kms" {
-  project     = "${google_project.vault.project_id}"
+  project     = "${local.vault_project_id}"
   role_id     = "kmsEncrypterDecryptorViewer"
   title       = "KMS Encrypter Decryptor Viewer"
   description = "KMS crypto key permissions to encrypt, decrypt, and view key data"
@@ -134,7 +147,7 @@ resource "google_project_iam_custom_role" "vault-seal-kms" {
 # Grant service account access to the key
 resource "google_kms_crypto_key_iam_member" "vault-init" {
   crypto_key_id = "${google_kms_crypto_key.vault-init.id}"
-  role          = "projects/${google_project.vault.project_id}/roles/${google_project_iam_custom_role.vault-seal-kms.role_id}"
+  role          = "projects/${local.vault_project_id}/roles/${google_project_iam_custom_role.vault-seal-kms.role_id}"
   member        = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
@@ -142,7 +155,7 @@ resource "google_kms_crypto_key_iam_member" "vault-init" {
 resource "google_compute_address" "vault-nat" {
   count   = 2
   name    = "vault-nat-external-${count.index}"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   region  = "${var.region}"
 
   depends_on = [
@@ -153,7 +166,7 @@ resource "google_compute_address" "vault-nat" {
 # Create a network for GKE
 resource "google_compute_network" "vault-network" {
   name                    = "vault-network"
-  project                 = "${google_project.vault.project_id}"
+  project                 = "${local.vault_project_id}"
   auto_create_subnetworks = false
 
   depends_on = [
@@ -164,7 +177,7 @@ resource "google_compute_network" "vault-network" {
 # Create subnets
 resource "google_compute_subnetwork" "vault-subnetwork" {
   name          = "vault-subnetwork"
-  project       = "${google_project.vault.project_id}"
+  project       = "${local.vault_project_id}"
   network       = "${google_compute_network.vault-network.self_link}"
   region        = "${var.region}"
   ip_cidr_range = "${var.kubernetes_network_ipv4_cidr}"
@@ -185,7 +198,7 @@ resource "google_compute_subnetwork" "vault-subnetwork" {
 # Create a NAT router so the nodes can reach DockerHub, etc
 resource "google_compute_router" "vault-router" {
   name    = "vault-router"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   region  = "${var.region}"
   network = "${google_compute_network.vault-network.self_link}"
 
@@ -196,7 +209,7 @@ resource "google_compute_router" "vault-router" {
 
 resource "google_compute_router_nat" "vault-nat" {
   name    = "vault-nat-1"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   router  = "${google_compute_router.vault-router.name}"
   region  = "${var.region}"
 
@@ -218,7 +231,7 @@ resource "google_compute_router_nat" "vault-nat" {
 
 # Get latest cluster version
 data "google_container_engine_versions" "versions" {
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   region  = "${var.region}"
 }
 
@@ -227,7 +240,7 @@ resource "google_container_cluster" "vault" {
   provider = "google-beta"
 
   name    = "vault"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
   region  = "${var.region}"
 
   network    = "${google_compute_network.vault-network.self_link}"
@@ -345,7 +358,7 @@ resource "google_container_cluster" "vault" {
 resource "google_compute_address" "vault" {
   name    = "vault-lb"
   region  = "${var.region}"
-  project = "${google_project.vault.project_id}"
+  project = "${local.vault_project_id}"
 
   depends_on = ["google_project_service.service"]
 }
@@ -355,7 +368,7 @@ output "address" {
 }
 
 output "project" {
-  value = "${google_project.vault.project_id}"
+  value = "${local.vault_project_id}"
 }
 
 output "region" {
