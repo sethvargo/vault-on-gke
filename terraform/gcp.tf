@@ -27,8 +27,8 @@ resource "google_project" "vault" {
 
 # Or use an existing project, if defined
 data "google_project" "vault" {
-  count           = "${var.project != "" ? 1 : 0}"
-  project_id      = "${var.project}"
+  count      = "${var.project != "" ? 1 : 0}"
+  project_id = "${var.project}"
 }
 
 # Obtain the project_id from either the newly created project resource or existing data project resource
@@ -109,9 +109,18 @@ resource "google_storage_bucket_iam_member" "vault-server" {
   member = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
+# Generate a random suffix for the KMS keyring.
+# Otherwise, deploying into an existing project will work
+# only on the first deployment attempt as there would
+# have been a keyring by the original name already present.
+# See: https://www.terraform.io/docs/providers/google/r/google_kms_key_ring.html
+resource "random_id" "kms_random" {
+  byte_length = "8"
+}
+
 # Create the KMS key ring
 resource "google_kms_key_ring" "vault" {
-  name     = "vault"
+  name     = "vault-${random_id.kms_random.hex}"
   location = "${var.region}"
   project  = "${local.vault_project_id}"
 
