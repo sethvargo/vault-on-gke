@@ -285,6 +285,7 @@ resource "google_container_cluster" "vault" {
     # Set metadata on the VM to supply more entropy
     metadata {
       google-compute-enable-virtio-rng = "true"
+      disable-legacy-endpoints         = "true"
     }
 
     labels {
