@@ -11,7 +11,7 @@ provider "google-beta" {
 
 # Generate a random id for the project - GCP projects must have globally
 # unique names
-resource "random_id" "random" {
+resource "random_id" "project_random" {
   prefix      = "${var.project_prefix}"
   byte_length = "8"
 }
@@ -19,8 +19,8 @@ resource "random_id" "random" {
 # Create the project if one isn't specified
 resource "google_project" "vault" {
   count           = "${var.project != "" ? 0 : 1}"
-  name            = "${random_id.random.hex}"
-  project_id      = "${random_id.random.hex}"
+  name            = "${random_id.project_random.hex}"
+  project_id      = "${random_id.project_random.hex}"
   org_id          = "${var.org_id}"
   billing_account = "${var.billing_account}"
 }
@@ -31,8 +31,9 @@ data "google_project" "vault" {
   project_id = "${var.project}"
 }
 
-# Obtain the project_id from either the newly created project resource or existing data project resource
-# One will be populated and the other will be null
+# Obtain the project_id from either the newly created project resource or
+# existing data project resource One will be populated and the other will be
+# null
 locals {
   vault_project_id = "${element(concat(data.google_project.vault.*.project_id, google_project.vault.*.project_id),0)}"
 }
@@ -109,11 +110,11 @@ resource "google_storage_bucket_iam_member" "vault-server" {
   member = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
-# Generate a random suffix for the KMS keyring.
-# Otherwise, deploying into an existing project will work
-# only on the first deployment attempt as there would
-# have been a keyring by the original name already present.
-# See: https://www.terraform.io/docs/providers/google/r/google_kms_key_ring.html
+# Generate a random suffix for the KMS keyring. Like projects, key rings names
+# must be globally unique within the project. A key ring also cannot be
+# destroyed, so deleting and re-creating a key ring will fail.
+#
+# This uses a random_id to prevent that from happening.
 resource "random_id" "kms_random" {
   byte_length = "8"
 }
