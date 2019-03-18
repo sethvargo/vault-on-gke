@@ -13,7 +13,8 @@ variable "project" {
 
   description = <<EOF
 Project ID where Terraform is authenticated to run to create additional
-projects.
+projects. If provided, Terraform will great the GKE and Vault cluster inside
+this project. If not given, Terraform will generate a new project.
 EOF
 }
 
@@ -48,26 +49,6 @@ variable "kubernetes_instance_type" {
 
   description = <<EOF
 Instance type to use for the nodes.
-EOF
-}
-
-variable "kubernetes_nodes_per_zone" {
-  type    = "string"
-  default = "1"
-
-  description = <<EOF
-Number of nodes to deploy in each zone of the Kubernetes cluster. For example,
-if there are 4 zones in the region and num_nodes_per_zone is 2, 8 total nodes
-will be created.
-EOF
-}
-
-variable "kubernetes_daily_maintenance_window" {
-  type    = "string"
-  default = "06:00"
-
-  description = <<EOF
-Maintenance window for GKE.
 EOF
 }
 
@@ -118,6 +99,54 @@ variable "storage_bucket_roles" {
     "roles/storage.legacyBucketReader",
     "roles/storage.objectAdmin",
   ]
+}
+
+#
+# KMS options
+# ------------------------------
+
+variable "kms_key_ring_prefix" {
+  type    = "string"
+  default = "vault-"
+
+  description = <<EOF
+String value to prefix the generated key ring with.
+EOF
+}
+
+variable "kms_key_ring" {
+  type    = "string"
+  default = ""
+
+  description = <<EOF
+String value to use for the name of the KMS key ring. This exists for
+backwards-compatability for users of the existing configurations. Please use
+kms_key_ring_prefix instead.
+EOF
+}
+
+#
+# Kubernetes options
+# ------------------------------
+
+variable "kubernetes_nodes_per_zone" {
+  type    = "string"
+  default = "1"
+
+  description = <<EOF
+Number of nodes to deploy in each zone of the Kubernetes cluster. For example,
+if there are 4 zones in the region and num_nodes_per_zone is 2, 8 total nodes
+will be created.
+EOF
+}
+
+variable "kubernetes_daily_maintenance_window" {
+  type    = "string"
+  default = "06:00"
+
+  description = <<EOF
+Maintenance window for GKE.
+EOF
 }
 
 variable "kubernetes_logging_service" {
@@ -210,6 +239,10 @@ The default behavior is to allow anyone (0.0.0.0/0) access to the endpoint.
 You should restrict access to external IPs that need to access the cluster.
 EOF
 }
+
+#
+# Vault options
+# ------------------------------
 
 variable "num_vault_pods" {
   type    = "string"

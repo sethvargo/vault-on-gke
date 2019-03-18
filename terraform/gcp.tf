@@ -116,12 +116,18 @@ resource "google_storage_bucket_iam_member" "vault-server" {
 #
 # This uses a random_id to prevent that from happening.
 resource "random_id" "kms_random" {
+  prefix      = "${var.kms_key_ring_prefix}"
   byte_length = "8"
+}
+
+# Obtain the key ring ID or use a randomly generated on.
+locals {
+  kms_key_ring = "${var.kms_key_ring != "" ? var.kms_key_ring : random_id.kms_random.hex}"
 }
 
 # Create the KMS key ring
 resource "google_kms_key_ring" "vault" {
-  name     = "vault-${random_id.kms_random.hex}"
+  name     = "${local.kms_key_ring}"
   location = "${var.region}"
   project  = "${local.vault_project_id}"
 
