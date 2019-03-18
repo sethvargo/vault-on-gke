@@ -136,7 +136,7 @@ resource "google_kms_key_ring" "vault" {
 
 # Create the crypto key for encrypting init keys
 resource "google_kms_crypto_key" "vault-init" {
-  name            = "vault-init"
+  name            = "${var.kms_crypto_key}"
   key_ring        = "${google_kms_key_ring.vault.id}"
   rotation_period = "604800s"
 }

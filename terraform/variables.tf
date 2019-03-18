@@ -125,6 +125,15 @@ kms_key_ring_prefix instead.
 EOF
 }
 
+variable "kms_crypto_key" {
+  type    = "string"
+  default = "vault-init"
+
+  description = <<EOF
+String value to use for the name of the KMS crypto key.
+EOF
+}
+
 #
 # Kubernetes options
 # ------------------------------
