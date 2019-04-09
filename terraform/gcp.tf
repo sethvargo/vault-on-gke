@@ -247,17 +247,17 @@ resource "google_compute_router_nat" "vault-nat" {
 
 # Get latest cluster version
 data "google_container_engine_versions" "versions" {
-  project = "${local.vault_project_id}"
-  region  = "${var.region}"
+  project  = "${local.vault_project_id}"
+  location = "${var.region}"
 }
 
 # Create the GKE cluster
 resource "google_container_cluster" "vault" {
   provider = "google-beta"
 
-  name    = "vault"
-  project = "${local.vault_project_id}"
-  region  = "${var.region}"
+  name     = "vault"
+  project  = "${local.vault_project_id}"
+  location = "${var.region}"
 
   network    = "${google_compute_network.vault-network.self_link}"
   subnetwork = "${google_compute_subnetwork.vault-subnetwork.self_link}"
