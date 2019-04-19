@@ -32,10 +32,6 @@ resource "tls_self_signed_cert" "vault-ca" {
 resource "tls_private_key" "vault" {
   algorithm = "RSA"
   rsa_bits  = "2048"
-
-  provisioner "local-exec" {
-    command = "echo '${self.private_key_pem}' > ../tls/vault.key && chmod 0600 ../tls/vault.key"
-  }
 }
 
 # Create the request to sign the cert with our CA
