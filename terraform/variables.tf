@@ -72,12 +72,6 @@ the Vault nodes.
 EOF
 }
 
-variable "service_account_adfd" {
-  type = "list"
-
-  default = []
-}
-
 variable "project_services" {
   type = "list"
 
