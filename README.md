@@ -18,7 +18,8 @@ please follow Kelsey's repository instead.
 
 - **Production Hardened** - Vault is deployed according to the [production
   hardening
-  guide](https://www.vaultproject.io/guides/operations/production.html).
+  guide](https://www.vaultproject.io/guides/operations/production.html). Please
+  see the [security section](#security) for more information.
 
 - **Auto-Init and Unseal** - Vault is automatically initialized and unsealed
   at runtime. The unseal keys are encrypted with [Google Cloud KMS][kms] and
@@ -170,22 +171,47 @@ This set of Terraform configurations is designed to make your life easy. It's
 a best-practices setup for Vault, but also aids in the retrieval of the initial
 root token. **The decrypted initial root token will be stored in your state file!**
 
-As such, you should use a Terraform state backend that supports encryption.
-Alternatively you can remove the decryption calls in `k8s.tf` and manually
-decrypt the root token using `gcloud`. Terraform auto-generates the command, but
-you will need to setup the permissions for your local default application
-credentials.
+As such, you should **use a Terraform state backend with encryption enabled,
+such as Cloud Storage**. Alternatively you can remove the decryption calls in
+`k8s.tf` and manually decrypt the root token using `gcloud`. Terraform
+auto-generates the command, but you will need to setup the permissions for your
+local default application credentials.
 
 ```text
 $ $(terraform output token_decrypt_command)
 ```
 
+### TLS Keys, Service Accounts, etc
+
+Just like the Vault root token, additional information is stored in plaintext in
+the Terraform state. This is not a bug and is the fundamental design of
+Terraform. You are ultimately responsible for securing access to your Terraform
+state. As such, you should **use a Terraform state backend with encryption
+enabled, such as Cloud Storage**.
+
+- Vault TLS keys - the Vault TLS keys, including the private key, are stored in
+  Terraform state. Terraform created the resources and thus maintains their
+  data.
+
+- Service Account Key - Terraform generates a Google Cloud Service Account key
+  in order to download the initial root token from Cloud Storage. This service
+  account key is stored in the Terraform state.
+
+- OAuth Access Token - In order to communicate with the Kubernetes cluster,
+  Terraform gets an OAuth2 access token. This access token is stored in the
+  Terraform state.
+
+You may be seeing a theme, which is that the Terraform state includes a wealth
+of information. This is fundamentally part of Terraform's architecture, and you
+should **use a Terraform state backend with encryption enabled, such as Cloud
+Storage**.
+
 ### Private Cluster
 
 The Kubernetes cluster is a "private" cluster, meaning nodes do not have
-publicly exposed IP addresses, and pods are only publicly accessible if
-exposed through a load balancer service. Additionaly, only authorzied IP CIDR
-blocks are able to communicate with the Kubernetes master nodes.
+publicly exposed IP addresses, and pods are only publicly accessible if exposed
+through a load balancer service. Additionally, only authorized IP CIDR blocks
+are able to communicate with the Kubernetes master nodes.
 
 The default allowed CIDR is `0.0.0.0/0 (anyone)`. **You should restrict this
 CIDR to the IP address(es) which will access the nodes!**.

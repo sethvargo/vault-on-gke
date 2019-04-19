@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [0.1.3] - TBD
 ### Added
+- More documentation on securing Terraform state
 
 ### Changed
 - Stop writing Vault TLS private key to disk
