@@ -8,7 +8,7 @@ EOF
 }
 
 variable "project" {
-  type    = "string"
+  type = "string"
   default = ""
 
   description = <<EOF
@@ -44,7 +44,7 @@ EOF
 }
 
 variable "kubernetes_instance_type" {
-  type    = "string"
+  type = "string"
   default = "n1-standard-2"
 
   description = <<EOF
@@ -100,7 +100,7 @@ variable "storage_bucket_roles" {
 # ------------------------------
 
 variable "kms_key_ring_prefix" {
-  type    = "string"
+  type = "string"
   default = "vault-"
 
   description = <<EOF
@@ -120,7 +120,7 @@ EOF
 }
 
 variable "kms_crypto_key" {
-  type    = "string"
+  type = "string"
   default = "vault-init"
 
   description = <<EOF
@@ -144,7 +144,7 @@ EOF
 }
 
 variable "kubernetes_daily_maintenance_window" {
-  type    = "string"
+  type = "string"
   default = "06:00"
 
   description = <<EOF
@@ -163,7 +163,7 @@ EOF
 }
 
 variable "kubernetes_monitoring_service" {
-  type    = "string"
+  type = "string"
   default = "monitoring.googleapis.com/kubernetes"
 
   description = <<EOF
@@ -183,7 +183,7 @@ EOF
 }
 
 variable "kubernetes_pods_ipv4_cidr" {
-  type    = "string"
+  type = "string"
   default = "10.0.92.0/22"
 
   description = <<EOF
@@ -203,7 +203,7 @@ EOF
 }
 
 variable "kubernetes_masters_ipv4_cidr" {
-  type    = "string"
+  type = "string"
   default = "10.0.82.0/28"
 
   description = <<EOF
@@ -248,7 +248,7 @@ EOF
 # ------------------------------
 
 variable "num_vault_pods" {
-  type    = "string"
+  type = "string"
   default = "3"
 
   description = <<EOF
@@ -268,7 +268,7 @@ EOF
 }
 
 variable "vault_init_container" {
-  type    = "string"
+  type = "string"
   default = "sethvargo/vault-init:1.0.0"
 
   description = <<EOF
@@ -287,7 +287,7 @@ EOF
 }
 
 variable "vault_recovery_threshold" {
-  type    = "string"
+  type = "string"
   default = "1"
 
   description = <<EOF

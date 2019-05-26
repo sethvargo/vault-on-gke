@@ -233,11 +233,6 @@ A: StatefulSets ensure that each pod is deployed in order. This is important for
 the initial bootstrapping process, otherwise there's a race for which Vault
 server initializes first with auto-init.
 
-**Q: Why didn't you use the Terraform Kubernetes provider to create the pods? There's this hacky template_file data source instead...**
-<br>
-A: StatefulSets are not fully supported in Terraform yet. Should that change,
-we can avoid the shellout to kubectl.
-
 **Q: I want to deploy without Terraform. Were is the YAML I can just apply?**
 <br>
 

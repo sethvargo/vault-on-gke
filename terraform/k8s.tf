@@ -24,71 +24,174 @@ resource "kubernetes_secret" "vault-tls" {
   }
 }
 
-# Render the YAML file
-data "template_file" "vault" {
-  template = "${file("${path.module}/../k8s/vault.yaml")}"
+# Create the StatefulSet
 
-  vars {
-    load_balancer_ip         = "${google_compute_address.vault.address}"
-    num_vault_pods           = "${var.num_vault_pods}"
-    vault_container          = "${var.vault_container}"
-    vault_init_container     = "${var.vault_init_container}"
-    vault_recovery_shares    = "${var.vault_recovery_shares}"
-    vault_recovery_threshold = "${var.vault_recovery_threshold}"
+resource "kubernetes_stateful_set" "vault" {
+  metadata {
+    labels {
+      app = "vault"
+    }
+    name = "vault"
+  }
 
-    project = "${google_kms_key_ring.vault.project}"
+  spec {
+    replicas = "${var.num_vault_pods}"
 
-    kms_region     = "${google_kms_key_ring.vault.location}"
-    kms_key_ring   = "${google_kms_key_ring.vault.name}"
-    kms_crypto_key = "${google_kms_crypto_key.vault-init.name}"
+    selector {
+      match_labels {
+        app = "vault"
+      }
+    }
 
-    gcs_bucket_name = "${google_storage_bucket.vault.name}"
+    service_name = "vault"
+
+    template {
+      metadata {
+        labels {
+          app = "vault"
+        }
+      }
+
+      spec {
+        affinity {
+          pod_anti_affinity {
+            preferred_during_scheduling_ignored_during_execution {
+              pod_affinity_term {
+                label_selector {
+                  matchExpressions = [{
+                    key      = "app",
+                    operator = "In",
+                    values   = ["vault"]
+                  }]
+                }
+                topology_key = "kubernetes.io/hostname"
+              }
+              weight = 60
+            }
+          }
+        }
+        init_container {
+          name              = "vault-init"
+          image             = "${var.vault_init_container}"
+          image_pull_policy = "IfNotPresent"
+          env {
+            name  = "GCS_BUCKET_NAME"
+            value = "${google_storage_bucket.vault.name}"
+          }
+          env {
+            name  = "KMS_KEY_ID"
+            value = "projects/${google_kms_key_ring.vault.project}/locations/${google_kms_key_ring.vault.location}/keyRings/${google_kms_key_ring.vault.name}/cryptoKeys/${google_kms_crypto_key.vault-init.name}"
+          }
+          env {
+            name  = "VAULT_ADDR"
+            value = "http://127.0.0.1:8200"
+          }
+          env {
+            name  = "VAULT_SECRET_SHARES"
+            value = "${var.vault_recovery_shares}"
+          }
+          env {
+            name  = "VAULT_SECRET_THRESHOLD"
+            value = "${var.vault_recovery_threshold}"
+          }
+          resources {
+            requests {
+              cpu    = "100m"
+              memory = "64Mi"
+            }
+          }
+        }
+
+        container {
+          name              = "vault"
+          image             = "${var.vault_container}"
+          image_pull_policy = "IfNotPresent"
+
+          args = ["server"]
+
+          env {
+            name  = "VAULT_ADDR"
+            value = "http://127.0.0.1:8200"
+          }
+          env {
+            name = "POD_IP_ADDR"
+            value_from {
+              field_ref {
+                field_path = "status.podIP"
+              }
+            }
+          }
+          env {
+            name  = "VAULT_LOCAL_CONFIG"
+            value = file("k8s/vault-local-config.tf")
+          }
+          port {
+            container_port = 8200
+            name           = "vault-port"
+          }
+          port {
+            container_port = 8201
+            name           = "cluster-port"
+          }
+          volume_mount {
+            name       = "vault-tls"
+            mount_path = "/etc/vault/tls"
+          }
+          security_context {
+            capabilities {
+              add = ["IPC_LOCK"]
+            }
+          }
+          resources {
+            requests {
+              cpu    = "500m"
+              memory = "256Mi"
+            }
+          }
+          readiness_probe {
+            http_get {
+              path = "/v1/sys/health?standbyok=true"
+              port = 8200
+            }
+            initial_delay_seconds = 5
+            period_seconds        = 5
+          }
+        }
+
+        volume {
+          name = "vault-tls"
+
+          secret {
+            secret_name = "vault-tls"
+          }
+        }
+      }
+    }
   }
 }
 
-# Submit the job - Terraform doesn't yet support StatefulSets, so we have to
-# shell out.
-resource "null_resource" "apply" {
-  triggers {
-    host                   = "${md5(google_container_cluster.vault.endpoint)}"
-    username               = "${md5(google_container_cluster.vault.master_auth.0.username)}"
-    password               = "${md5(google_container_cluster.vault.master_auth.0.password)}"
-    client_certificate     = "${md5(google_container_cluster.vault.master_auth.0.client_certificate)}"
-    client_key             = "${md5(google_container_cluster.vault.master_auth.0.client_key)}"
-    cluster_ca_certificate = "${md5(google_container_cluster.vault.master_auth.0.cluster_ca_certificate)}"
+# Create the Service
+
+resource "kubernetes_service" "vault" {
+  metadata {
+    name = "vault"
+    labels {
+      app = "vault"
+    }
   }
+  spec {
+    selector {
+      app = "vault"
+    }
+    external_traffic_policy = "local"
+    port {
+      port = 443
+      target_port = 8200
+    }
 
-  depends_on = [
-    "kubernetes_secret.vault-tls",
-  ]
-
-  provisioner "local-exec" {
-    command = <<EOF
-gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --region="${google_container_cluster.vault.region}" --project="${google_container_cluster.vault.project}"
-
-CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.region}_${google_container_cluster.vault.name}"
-echo '${data.template_file.vault.rendered}' | kubectl apply --context="$CONTEXT" -f -
-EOF
+    load_balancer_ip = "${google_compute_address.vault.address}"
+    type = "LoadBalancer"
   }
-}
-
-# Wait for all the servers to be ready
-resource "null_resource" "wait-for-finish" {
-  provisioner "local-exec" {
-    command = <<EOF
-for i in $(seq -s " " 1 15); do
-  sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
-    exit 0
-  fi
-done
-
-echo "Pods are not ready after 2m"
-exit 1
-EOF
-  }
-
-  depends_on = ["null_resource.apply"]
 }
 
 # Build the URL for the keys on GCS

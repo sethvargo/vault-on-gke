@@ -35,7 +35,7 @@ data "google_project" "vault" {
 # existing data project resource One will be populated and the other will be
 # null
 locals {
-  vault_project_id = "${element(concat(data.google_project.vault.*.project_id, google_project.vault.*.project_id),0)}"
+  vault_project_id = "${element(concat(data.google_project.vault.*.project_id, google_project.vault.*.project_id), 0)}"
 }
 
 # Create the vault service account
