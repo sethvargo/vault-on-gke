@@ -67,7 +67,7 @@ resource "null_resource" "apply" {
 gcloud container clusters get-credentials "${google_container_cluster.vault.name}" --region="${google_container_cluster.vault.region}" --project="${google_container_cluster.vault.project}"
 
 CONTEXT="gke_${google_container_cluster.vault.project}_${google_container_cluster.vault.region}_${google_container_cluster.vault.name}"
-echo '${data.template_file.vault.rendered}' | kubectl apply --context="$CONTEXT" -f -
+echo '${data.template_file.vault.rendered}' | kubectl apply -n default --context="$CONTEXT" -f -
 EOF
   }
 }
@@ -78,7 +78,7 @@ resource "null_resource" "wait-for-finish" {
     command = <<EOF
 for i in $(seq -s " " 1 15); do
   sleep $i
-  if [ $(kubectl get pod | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
+  if [ $(kubectl get pod -n default | grep vault | wc -l) -eq ${var.num_vault_pods} ]; then
     exit 0
   fi
 done
