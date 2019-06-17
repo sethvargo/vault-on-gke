@@ -259,7 +259,7 @@ EOF
 
 variable "vault_container" {
   type    = "string"
-  default = "vault:1.0.1"
+  default = "vault:1.1.3"
 
   description = <<EOF
 Name of the Vault container image to deploy. This can be specified like
