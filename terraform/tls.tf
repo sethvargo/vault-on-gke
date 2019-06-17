@@ -6,8 +6,8 @@ resource "tls_private_key" "vault-ca" {
 }
 
 resource "tls_self_signed_cert" "vault-ca" {
-  key_algorithm   = "${tls_private_key.vault-ca.algorithm}"
-  private_key_pem = "${tls_private_key.vault-ca.private_key_pem}"
+  key_algorithm   = tls_private_key.vault-ca.algorithm
+  private_key_pem = tls_private_key.vault-ca.private_key_pem
 
   subject {
     common_name  = "vault-ca.local"
@@ -36,8 +36,8 @@ resource "tls_private_key" "vault" {
 
 # Create the request to sign the cert with our CA
 resource "tls_cert_request" "vault" {
-  key_algorithm   = "${tls_private_key.vault.algorithm}"
-  private_key_pem = "${tls_private_key.vault.private_key_pem}"
+  key_algorithm   = tls_private_key.vault.algorithm
+  private_key_pem = tls_private_key.vault.private_key_pem
 
   dns_names = [
     "vault",
@@ -46,7 +46,7 @@ resource "tls_cert_request" "vault" {
   ]
 
   ip_addresses = [
-    "${google_compute_address.vault.address}",
+    google_compute_address.vault.address,
   ]
 
   subject {
@@ -57,11 +57,11 @@ resource "tls_cert_request" "vault" {
 
 # Now sign the cert
 resource "tls_locally_signed_cert" "vault" {
-  cert_request_pem = "${tls_cert_request.vault.cert_request_pem}"
+  cert_request_pem = tls_cert_request.vault.cert_request_pem
 
-  ca_key_algorithm   = "${tls_private_key.vault-ca.algorithm}"
-  ca_private_key_pem = "${tls_private_key.vault-ca.private_key_pem}"
-  ca_cert_pem        = "${tls_self_signed_cert.vault-ca.cert_pem}"
+  ca_key_algorithm   = tls_private_key.vault-ca.algorithm
+  ca_private_key_pem = tls_private_key.vault-ca.private_key_pem
+  ca_cert_pem        = tls_self_signed_cert.vault-ca.cert_pem
 
   validity_period_hours = 8760
 
@@ -77,3 +77,4 @@ resource "tls_locally_signed_cert" "vault" {
     command = "echo '${self.cert_pem}' > ../tls/vault.pem && echo '${tls_self_signed_cert.vault-ca.cert_pem}' >> ../tls/vault.pem && chmod 0600 ../tls/vault.pem"
   }
 }
+
