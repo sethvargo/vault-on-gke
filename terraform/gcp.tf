@@ -35,7 +35,7 @@ data "google_project" "vault" {
 # existing data project resource One will be populated and the other will be
 # null
 locals {
-  vault_project_id = "${element(concat(data.google_project.vault.*.project_id, google_project.vault.*.project_id),0)}"
+  vault_project_id = "${element(concat(data.google_project.vault.*.project_id, google_project.vault.*.project_id), 0)}"
 }
 
 # Create the vault service account
@@ -275,6 +275,7 @@ resource "google_container_cluster" "vault" {
   enable_legacy_abac = false
 
   node_config {
+    image_type      = "COS_CONTAINERD"
     machine_type    = "${var.kubernetes_instance_type}"
     service_account = "${google_service_account.vault-server.email}"
 
@@ -290,6 +291,10 @@ resource "google_container_cluster" "vault" {
 
     labels {
       service = "vault"
+    }
+
+    sandbox_config {
+      sandbox_type = "gvisor"
     }
 
     tags = ["vault"]
