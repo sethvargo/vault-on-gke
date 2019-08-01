@@ -2,12 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.3] - TBD
+## [0.2.0] - 2019-08-01
+### Breaking
+- These configurations now require Terraform 0.12+
+- Deploy Vault 1.2.0 by default
+- Some variable types have changed to be 0.12 compatible
+
 ### Added
 - More documentation on securing Terraform state
 
 ### Changed
 - Stop writing Vault TLS private key to disk
+- Reduce required KMS key permissions now that hashicorp/vault#5999 has been out for awhile
 
 ## [0.1.2] - 2019-02-19
 ### Added

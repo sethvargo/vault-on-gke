@@ -105,18 +105,18 @@ depends_on = [null_resource.wait-for-finish]
 
 # Download the encrypted recovery unseal keys and initial root token from GCS
 data "http" "keys" {
-url = data.google_storage_object_signed_url.keys.signed_url
+  url = data.google_storage_object_signed_url.keys.signed_url
 }
 
 # Decrypt the values
 data "google_kms_secret" "keys" {
-crypto_key = google_kms_crypto_key.vault-init.id
-ciphertext = data.http.keys.body
+  crypto_key = google_kms_crypto_key.vault-init.id
+  ciphertext = data.http.keys.body
 }
 
 # Output the initial root token
 output "root_token" {
-value = data.google_kms_secret.keys.plaintext
+  value = data.google_kms_secret.keys.plaintext
 }
 
 # Uncomment this if you want to decrypt the token yourself

@@ -147,26 +147,10 @@ resource "google_kms_crypto_key" "vault-init" {
   rotation_period = "604800s"
 }
 
-# Create a custom IAM role with the most minimal set of permissions for the
-# KMS auto-unsealer. Once hashicorp/vault#5999 is merged, this can be replaced
-# with the built-in roles/cloudkms.cryptoKeyEncrypterDecryptor role.
-resource "google_project_iam_custom_role" "vault-seal-kms" {
-  project     = local.vault_project_id
-  role_id     = "kmsEncrypterDecryptorViewer"
-  title       = "KMS Encrypter Decryptor Viewer"
-  description = "KMS crypto key permissions to encrypt, decrypt, and view key data"
-
-  permissions = [
-    "cloudkms.cryptoKeyVersions.useToEncrypt",
-    "cloudkms.cryptoKeyVersions.useToDecrypt",
-    "cloudkms.cryptoKeys.get",
-  ]
-}
-
 # Grant service account access to the key
 resource "google_kms_crypto_key_iam_member" "vault-init" {
   crypto_key_id = google_kms_crypto_key.vault-init.id
-  role          = "projects/${local.vault_project_id}/roles/${google_project_iam_custom_role.vault-seal-kms.role_id}"
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
   member        = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
@@ -264,7 +248,7 @@ resource "google_container_cluster" "vault" {
   initial_node_count = var.kubernetes_nodes_per_zone
 
   min_master_version = data.google_container_engine_versions.versions.latest_master_version
-  node_version       = data.google_container_engine_versions.versions.latest_node_version
+  node_version       = data.google_container_engine_versions.versions.latest_master_version
 
   logging_service    = var.kubernetes_logging_service
   monitoring_service = var.kubernetes_monitoring_service

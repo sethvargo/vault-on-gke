@@ -94,6 +94,7 @@ please follow Kelsey's repository instead.
 1. Run some commands:
 
     ```text
+    $ vault secrets enable -path=secret -version=2 kv
     $ vault kv put secret/foo a=b
     ```
 
