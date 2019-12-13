@@ -137,6 +137,12 @@ variable "kubernetes_pods_ipv4_cidr" {
   description = "IP CIDR block for pods. This must be at least /22 and cannot overlap with any other IP CIDR ranges."
 }
 
+variable "kubernetes_secrets_crypto_key" {
+  type        = string
+  default     = "kubernetes-secrets"
+  description = "Name of the KMS key to use for encrypting the Kubernetes database."
+}
+
 variable "kubernetes_services_ipv4_cidr" {
   type        = string
   default     = "10.0.88.0/22"

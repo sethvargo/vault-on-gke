@@ -140,6 +140,20 @@ resource "google_kms_crypto_key_iam_member" "vault-init" {
   member        = "serviceAccount:${google_service_account.vault-server.email}"
 }
 
+# Create the crypto key for encrypting Kubernetes secrets
+resource "google_kms_crypto_key" "kubernetes-secrets" {
+  name            = var.kubernetes_secrets_crypto_key
+  key_ring        = google_kms_key_ring.vault.id
+  rotation_period = "604800s"
+}
+
+# Grant GKE access to the key
+resource "google_kms_crypto_key_iam_member" "kubernetes-secrets-gke" {
+  crypto_key_id = google_kms_crypto_key.kubernetes-secrets.id
+  role          = "roles/cloudkms.cryptoKeyEncrypterDecrypter"
+  member        = "serviceAccount:service-${data.google_project.vault.number}@container-engine-robot.iam.gserviceaccount.com"
+}
+
 # Create an external NAT IP
 resource "google_compute_address" "vault-nat" {
   count   = 2
@@ -243,6 +257,11 @@ resource "google_container_cluster" "vault" {
   # here as well.
   enable_legacy_abac = false
 
+  database_encryption {
+    state    = "ENCRYPTED"
+    key_name = google_kms_crypto_key.kubernetes-secrets.self_link
+  }
+
   node_config {
     machine_type    = var.kubernetes_instance_type
     service_account = google_service_account.vault-server.email
@@ -333,6 +352,7 @@ resource "google_container_cluster" "vault" {
   depends_on = [
     google_project_service.service,
     google_kms_crypto_key_iam_member.vault-init,
+    google_kms_crypto_key_iam_member.kubernetes-secrets-gke,
     google_storage_bucket_iam_member.vault-server,
     google_project_iam_member.service-account,
     google_project_iam_member.service-account-custom,
