@@ -173,16 +173,13 @@ $ terraform destroy
 
 This set of Terraform configurations is designed to make your life easy. It's
 a best-practices setup for Vault, but also aids in the retrieval of the initial
-root token. **The decrypted initial root token will be stored in your state file!**
+root token.
 
 As such, you should **use a Terraform state backend with encryption enabled,
-such as Cloud Storage**. Alternatively you can remove the decryption calls in
-`k8s.tf` and manually decrypt the root token using `gcloud`. Terraform
-auto-generates the command, but you will need to setup the permissions for your
-local default application credentials.
+such as Cloud Storage**. To access the root token
 
 ```text
-$ $(terraform output token_decrypt_command)
+$ $(terraform output root_token_decrypt_command)
 ```
 
 ### TLS Keys, Service Accounts, etc
@@ -241,25 +238,6 @@ server initializes first with auto-init.
 <br>
 A: StatefulSets are not fully supported in Terraform yet. Should that change,
 we can avoid the shellout to kubectl.
-
-**Q: I want to deploy without Terraform. Were is the YAML I can just apply?**
-<br>
-
-A: The YAML _template_ is in [k8s/vault.yaml][] in this repository. However,
-the spec requires information that is only known at runtime. Specifically, you
-will need to fill in any values with the dollar-brace `${...}` syntax before
-you can apply the spec with `kubectl`;. For example:
-
-```diff
- spec:
-   type: LoadBalancer
--  loadBalancerIP: ${load_balancer_ip}
-+  loadBalancerIP: 124.2.55.3
-   externalTrafficPolicy: Local
-   selector:
-    app: vault
-```
-
 
 [gcs]: https://cloud.google.com/storage
 [gke]: https://cloud.google.com/kubernetes-engine
