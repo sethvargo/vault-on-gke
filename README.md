@@ -46,10 +46,6 @@ please follow Kelsey's repository instead.
    will run against your default project, but all resources are created in the
    (new) project that it creates.
 
-1. Install the [kubernetes
-   CLI](https://kubernetes.io/docs/tasks/tools/install-kubectl/) (aka
-   `kubectl`)
-
 1. Run Terraform:
 
     ```text
@@ -233,11 +229,6 @@ cfssl, it uses the built-in Terraform functions.
 A: StatefulSets ensure that each pod is deployed in order. This is important for
 the initial bootstrapping process, otherwise there's a race for which Vault
 server initializes first with auto-init.
-
-**Q: Why didn't you use the Terraform Kubernetes provider to create the pods? There's this hacky template_file data source instead...**
-<br>
-A: StatefulSets are not fully supported in Terraform yet. Should that change,
-we can avoid the shellout to kubectl.
 
 [gcs]: https://cloud.google.com/storage
 [gke]: https://cloud.google.com/kubernetes-engine
