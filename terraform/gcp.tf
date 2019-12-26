@@ -27,7 +27,7 @@ resource "google_project" "vault" {
 
 # Or use an existing project, if defined
 data "google_project" "vault" {
-  project_id = google_project.vault[0].project_id
+  project_id = var.project != "" ? var.project : google_project.vault[0].project_id
 }
 
 # Create the vault service account
