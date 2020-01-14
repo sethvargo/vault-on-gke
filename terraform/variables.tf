@@ -11,7 +11,7 @@ variable "region" {
 variable "project" {
   type        = string
   default     = ""
-  description = "Project ID where Terraform is authenticated to run to create additional projects. If provided, Terraform will great the GKE and Vault cluster inside this project. If not given, Terraform will generate a new project."
+  description = "Project ID where Terraform is authenticated to run to create additional projects. If provided, Terraform will create the GKE and Vault cluster inside this project. If not given, Terraform will generate a new project."
 }
 
 variable "project_prefix" {
