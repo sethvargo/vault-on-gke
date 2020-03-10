@@ -1,4 +1,4 @@
-# Query the client configuration for our current service account, which shoudl
+# Query the client configuration for our current service account, which should
 # have permission to talk to the GKE cluster since it created it.
 data "google_client_config" "current" {}
 
@@ -35,9 +35,10 @@ resource "kubernetes_service" "vault-lb" {
   }
 
   spec {
-    type                    = "LoadBalancer"
-    load_balancer_ip        = google_compute_address.vault.address
-    external_traffic_policy = "Local"
+    type                        = "LoadBalancer"
+    load_balancer_ip            = google_compute_address.vault.address
+    load_balancer_source_ranges = var.vault_source_ranges
+    external_traffic_policy     = "Local"
 
     selector = {
       app = "vault"
