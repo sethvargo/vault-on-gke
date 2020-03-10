@@ -168,7 +168,15 @@ variable "kubernetes_master_authorized_networks" {
     },
   ]
 
-  description = "List of CIDR blocks to allow access to the master's API endpoint. This is specified as a slice of objects, where each object has a display_name and cidr_block attribute. The default behavior is to allow anyone (0.0.0.0/0) access to the endpoint. You should restrict access to external IPs that need to access the cluster."
+  description = "List of CIDR blocks to allow access to the Kubernetes master's API endpoint. This is specified as a slice of objects, where each object has a display_name and cidr_block attribute. The default behavior is to allow anyone (0.0.0.0/0) access to the endpoint. You should restrict access to external IPs that need to access the Kubernetes cluster."
+}
+
+# This is an option used by the kubernetes provider, but is part of the Vault
+# security posture.
+variable "vault_source_ranges" {
+  type        = list(string)
+  default     = [ "0.0.0.0/0" ]
+  description = "List of addresses or CIDR blocks which are allowed to connect to the Vault IP address. The default behavior is to allow anyone (0.0.0.0/0) access. You should restrict access to external IPs that need to access the Vault cluster."
 }
 
 #
