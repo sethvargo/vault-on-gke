@@ -37,11 +37,6 @@ resource "google_service_account" "vault-server" {
   project      = data.google_project.vault.project_id
 }
 
-# Create a service account key
-resource "google_service_account_key" "vault" {
-  service_account_id = google_service_account.vault-server.name
-}
-
 # Add the service account to the project
 resource "google_project_iam_member" "service-account" {
   count   = length(var.service_account_iam_roles)
