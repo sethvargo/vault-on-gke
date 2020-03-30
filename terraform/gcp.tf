@@ -72,6 +72,8 @@ resource "google_storage_bucket" "vault" {
   force_destroy = true
   storage_class = "MULTI_REGIONAL"
 
+  bucket_policy_only = true
+
   versioning {
     enabled = true
   }
