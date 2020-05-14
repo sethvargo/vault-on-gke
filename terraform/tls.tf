@@ -39,19 +39,19 @@ resource "tls_cert_request" "vault" {
   key_algorithm   = tls_private_key.vault.algorithm
   private_key_pem = tls_private_key.vault.private_key_pem
 
-  dns_names = [
+  dns_names = concat([
     "vault",
     "vault.local",
     "vault.default.svc.cluster.local",
-  ]
+  ], var.cert_extra_dns_names)
 
   ip_addresses = [
     google_compute_address.vault.address,
   ]
 
   subject {
-    common_name  = "vault.local"
-    organization = "HashiCorp Vault"
+    common_name  = var.cert_subject_common_name
+    organization = var.cert_subject_organization
   }
 }
 

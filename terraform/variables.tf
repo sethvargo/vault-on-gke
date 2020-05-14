@@ -98,6 +98,28 @@ variable "kms_crypto_key" {
 }
 
 #
+# Certificate options
+# ------------------------------
+
+variable "cert_extra_dns_names" {
+  type        = list
+  default     = []
+  description = "Names added to the Subject Alternative Name extension."
+}
+
+variable "cert_subject_common_name" {
+  type        = string
+  default     = "vault.local"
+  description = "The common name (CN) of the certificate subject."
+}
+
+variable "cert_subject_organization" {
+  type        = string
+  default     = "HashiCorp Vault"
+  description = "The organization of the certificate subject."
+}
+
+#
 # Kubernetes options
 # ------------------------------
 
@@ -175,7 +197,7 @@ variable "kubernetes_master_authorized_networks" {
 # security posture.
 variable "vault_source_ranges" {
   type        = list(string)
-  default     = [ "0.0.0.0/0" ]
+  default     = ["0.0.0.0/0"]
   description = "List of addresses or CIDR blocks which are allowed to connect to the Vault IP address. The default behavior is to allow anyone (0.0.0.0/0) access. You should restrict access to external IPs that need to access the Vault cluster."
 }
 
