@@ -2,6 +2,23 @@
 # have permission to talk to the GKE cluster since it created it.
 data "google_client_config" "current" {}
 
+locals {
+  default_vault_config_template_path = "${path.module}/vault_local_config.hcl.tpl"
+  vault_config_template_path         = coalesce(var.vault_config_template_path, local.default_vault_config_template_path)
+}
+
+data "template_file" "vault_config" {
+  template = file(local.vault_config_template_path)
+  vars = {
+    vault_address = google_compute_address.vault.address
+    bucket_name   = google_storage_bucket.vault.name
+    project       = google_kms_key_ring.vault.project
+    region        = google_kms_key_ring.vault.location
+    key_ring      = google_kms_key_ring.vault.name
+    crypto_key    = google_kms_crypto_key.vault-init.name
+  }
+}
+
 # This file contains all the interactions with Kubernetes
 provider "kubernetes" {
   load_config_file = false
@@ -192,39 +209,7 @@ resource "kubernetes_stateful_set" "vault" {
 
           env {
             name  = "VAULT_LOCAL_CONFIG"
-            value = <<EOF
-              api_addr     = "https://${google_compute_address.vault.address}"
-              cluster_addr = "https://$(POD_IP_ADDR):8201"
-
-              log_level = "warn"
-
-              ui = true
-
-              seal "gcpckms" {
-                project    = "${google_kms_key_ring.vault.project}"
-                region     = "${google_kms_key_ring.vault.location}"
-                key_ring   = "${google_kms_key_ring.vault.name}"
-                crypto_key = "${google_kms_crypto_key.vault-init.name}"
-              }
-
-              storage "gcs" {
-                bucket     = "${google_storage_bucket.vault.name}"
-                ha_enabled = "true"
-              }
-
-              listener "tcp" {
-                address     = "127.0.0.1:8200"
-                tls_disable = "true"
-              }
-
-              listener "tcp" {
-                address       = "$(POD_IP_ADDR):8200"
-                tls_cert_file = "/etc/vault/tls/vault.crt"
-                tls_key_file  = "/etc/vault/tls/vault.key"
-
-                tls_disable_client_certs = true
-              }
-            EOF
+            value = data.template_file.vault_config.rendered
           }
 
           readiness_probe {

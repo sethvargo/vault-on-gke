@@ -13,7 +13,6 @@ please follow Kelsey's repository instead.
 **These configurations require Terraform 0.12+!** For support with Terraform
 0.11, please use the git tag v0.1.2 series.
 
-
 ## Feature Highlights
 
 - **Vault HA** - The Vault cluster is deployed in HA mode backed by [Google
@@ -36,7 +35,6 @@ please follow Kelsey's repository instead.
 - **Audit Logging** - Audit logging to Stackdriver can be optionally enabled
   with minimal additional configuration.
 
-
 ## Tutorial
 
 1. Download and install [Terraform][terraform].
@@ -48,51 +46,50 @@ please follow Kelsey's repository instead.
 
 1. Run Terraform:
 
-    ```text
-    $ cd terraform/
-    $ terraform init
-    $ terraform apply
-    ```
+   ```text
+   $ cd terraform/
+   $ terraform init
+   $ terraform apply
+   ```
 
-    This operation will take some time as it:
+   This operation will take some time as it:
 
-    1. Creates a new project
-    1. Enables the required services on that project
-    1. Creates a bucket for storage
-    1. Creates a KMS key for encryption
-    1. Creates a service account with the most restrictive permissions to those resources
-    1. Creates a GKE cluster with the configured service account attached
-    1. Creates a public IP
-    1. Generates a self-signed certificate authority (CA)
-    1. Generates a certificate signed by that CA
-    1. Configures Terraform to talk to Kubernetes
-    1. Creates a Kubernetes secret with the TLS file contents
-    1. Configures your local system to talk to the GKE cluster by getting the cluster credentials and kubernetes context
-    1. Submits the StatefulSet and Service to the Kubernetes API
-
+   1. Creates a new project
+   1. Enables the required services on that project
+   1. Creates a bucket for storage
+   1. Creates a KMS key for encryption
+   1. Creates a service account with the most restrictive permissions to those resources
+   1. Creates a GKE cluster with the configured service account attached
+   1. Creates a public IP
+   1. Generates a self-signed certificate authority (CA)
+   1. Generates a certificate signed by that CA
+   1. Configures Terraform to talk to Kubernetes
+   1. Creates a Kubernetes secret with the TLS file contents
+   1. Configures your local system to talk to the GKE cluster by getting the cluster credentials and kubernetes context
+   1. Submits the StatefulSet and Service to the Kubernetes API
 
 ## Interact with Vault
 
 1. Export environment variables:
 
-    Vault reads these environment variables for communication. Set Vault's
-    address, the CA to use for validation, and the initial root token.
+   Vault reads these environment variables for communication. Set Vault's
+   address, the CA to use for validation, and the initial root token.
 
-    ```text
-    # Make sure you're in the terraform/ directory
-    # $ cd terraform/
+   ```text
+   # Make sure you're in the terraform/ directory
+   # $ cd terraform/
 
-    $ export VAULT_ADDR="https://$(terraform output address)"
-    $ export VAULT_TOKEN="$(terraform output root_token)"
-    $ export VAULT_CAPATH="$(cd ../ && pwd)/tls/ca.pem"
-    ```
+   $ export VAULT_ADDR="https://$(terraform output address)"
+   $ export VAULT_TOKEN="$(terraform output root_token)"
+   $ export VAULT_CAPATH="$(cd ../ && pwd)/tls/ca.pem"
+   ```
 
 1. Run some commands:
 
-    ```text
-    $ vault secrets enable -path=secret -version=2 kv
-    $ vault kv put secret/foo a=b
-    ```
+   ```text
+   $ vault secrets enable -path=secret -version=2 kv
+   $ vault kv put secret/foo a=b
+   ```
 
 ## Audit Logging
 
@@ -155,13 +152,26 @@ Alternatively you can create and upload a dedicated service account for the
 GCP auth method during configuration and restrict the node-level default
 application credentials.
 
+## Using a custom Vault configuration file
+
+A default [vault configuration is provided](./terraform/vault_local_config.hcl.tpl), but a custom one may be provided in JSON or HCL format via the `vault_config_template_path` variable.
+
+Any provided configuration file will be processed via the data source `template_file`. This allows you to interpolate values created by this module:
+
+- `vault_address`: Vault IP address (google_compute_address.vault.address)
+- `bucket_name`: Backend storage bucket (google_storage_bucket.vault.name)
+- `project`: GCP Project Name (google_kms_key_ring.vault.project)
+- `region`: GCP Region (google_kms_key_ring.vault.location)
+- `key_ring`: KMS Keyring Name (google_kms_key_ring.vault.name)
+- `crypto_key`: KMS Key Name (google_kms_crypto_key.vault-init.name)
+
+Check out the [provided configuration](./terraform/vault_local_config.hcl.tpl) template as an example.
 
 ## Cleaning Up
 
 ```text
 $ terraform destroy
 ```
-
 
 ## Security
 
@@ -212,7 +222,6 @@ are able to communicate with the Kubernetes master nodes.
 
 The default allowed CIDR is `0.0.0.0/0 (anyone)`. **You should restrict this
 CIDR to the IP address(es) which will access the nodes!**.
-
 
 ## FAQ
 

@@ -5,7 +5,7 @@ terraform {
 variable "region" {
   type        = string
   default     = "us-east4"
-  description = "Region in which to create the cluster and run Atlantis."
+  description = "Region in which to create the cluster and run Vault."
 }
 
 variable "project" {
@@ -175,7 +175,7 @@ variable "kubernetes_master_authorized_networks" {
 # security posture.
 variable "vault_source_ranges" {
   type        = list(string)
-  default     = [ "0.0.0.0/0" ]
+  default     = ["0.0.0.0/0"]
   description = "List of addresses or CIDR blocks which are allowed to connect to the Vault IP address. The default behavior is to allow anyone (0.0.0.0/0) access. You should restrict access to external IPs that need to access the Vault cluster."
 }
 
@@ -211,4 +211,10 @@ variable "vault_recovery_threshold" {
   type        = string
   default     = "1"
   description = "Number of recovery keys required for quorum. This must be less than or equal to \"vault_recovery_keys\"."
+}
+
+variable "vault_config_template_path" {
+  type        = "string"
+  description = "Path to an optional Vault config file in JSON or HCL. A default config is provided. The following values may be interpolated into your template: vault_address, bucket_name, project, region, key_ring, crypto_key"
+  default     = null
 }
