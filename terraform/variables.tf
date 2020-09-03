@@ -5,7 +5,7 @@ terraform {
 variable "region" {
   type        = string
   default     = "us-east4"
-  description = "Region in which to create the cluster and run Atlantis."
+  description = "Region in which to create the cluster and run Vault."
 }
 
 variable "project" {
