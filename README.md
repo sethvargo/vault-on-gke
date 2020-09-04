@@ -28,12 +28,12 @@ please follow Kelsey's repository instead.
   at runtime. The unseal keys are encrypted with [Google Cloud KMS][kms] and
   stored in [Google Cloud Storage][gcs]
 
-- **Full Isolation** - The Vault cluster is provisioned in it's own Kubernetes
+- **Full Isolation** - The Vault cluster is provisioned in its own Kubernetes
   cluster in a dedicated GCP project that is provisioned dynamically at
   runtime. Clients connect to Vault using **only** the load balancer and Vault
   is treated as a managed external service.
 
-- **Audit Logging** - Audit logging to Stackdriver can be optionally enabled
+- **Audit Logging** - Audit logging to [Cloud Logging][cloud-logging] (formerly Stackdriver) can be optionally enabled
   with minimal additional configuration.
 
 
@@ -97,14 +97,14 @@ please follow Kelsey's repository instead.
 ## Audit Logging
 
 Audit logging is not enabled in a default Vault installation. To enable audit
-logging to [Stackdriver][stackdriver] on Google Cloud, enable the `file` audit
+logging to [Cloud Logging][cloud-logging] on Google Cloud, enable the `file` audit
 device on `stdout`:
 
 ```text
 $ vault audit enable file file_path=stdout
 ```
 
-That's it! Vault will now log all audit requests to Stackdriver. Additionally,
+That's it! Vault will now log all audit requests to Cloud Logging. Additionally,
 because the configuration uses an L4 load balancer, Vault does not need to
 parse `X-Forwarded-For` headers to extract the client IP, as requests are
 passed directly to the node.
@@ -235,7 +235,7 @@ server initializes first with auto-init.
 [kms]: https://cloud.google.com/kms
 [sdk]: https://cloud.google.com/sdk
 [kelseys-tutorial]: https://github.com/kelseyhightower/vault-on-google-kubernetes-engine
-[stackdriver]: https://cloud.google.com/stackdriver/
+[cloud-logging]: https://cloud.google.com/logging
 [terraform]: https://www.terraform.io
 [vault]: https://www.vaultproject.io
 [vault-gcp-auth]: https://www.vaultproject.io/docs/auth/gcp.html
