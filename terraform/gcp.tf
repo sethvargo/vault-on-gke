@@ -362,6 +362,8 @@ resource "google_compute_address" "vault" {
   name    = "vault-lb"
   region  = var.region
   project = data.google_project.vault.project_id
+  subnetwork = var.internal_load_balancer == true ? google_compute_subnetwork.vault-subnetwork.self_link : ""
+  address_type = var.internal_load_balancer == true ? "INTERNAL" : "EXTERNAL"
 
   depends_on = [google_project_service.service]
 }

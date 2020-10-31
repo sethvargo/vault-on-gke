@@ -32,6 +32,7 @@ resource "kubernetes_service" "vault-lb" {
     labels = {
       app = "vault"
     }
+    annotations = var.service_annotations != "" ? var.service_annotations : {}
   }
 
   spec {
