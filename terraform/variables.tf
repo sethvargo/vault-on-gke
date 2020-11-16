@@ -171,6 +171,11 @@ variable "kubernetes_master_authorized_networks" {
   description = "List of CIDR blocks to allow access to the Kubernetes master's API endpoint. This is specified as a slice of objects, where each object has a display_name and cidr_block attribute. The default behavior is to allow anyone (0.0.0.0/0) access to the endpoint. You should restrict access to external IPs that need to access the Kubernetes cluster."
 }
 
+variable "kubernetes_release_channel" {
+  type = string
+  default = "REGULAR"
+}
+
 # This is an option used by the kubernetes provider, but is part of the Vault
 # security posture.
 variable "vault_source_ranges" {

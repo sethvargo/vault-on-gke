@@ -225,12 +225,6 @@ resource "google_compute_router_nat" "vault-nat" {
   }
 }
 
-# Get latest cluster version
-data "google_container_engine_versions" "versions" {
-  project  = data.google_project.vault.project_id
-  location = var.region
-}
-
 # Create the GKE cluster
 resource "google_container_cluster" "vault" {
   provider = google-beta
@@ -244,8 +238,9 @@ resource "google_container_cluster" "vault" {
 
   initial_node_count = var.kubernetes_nodes_per_zone
 
-  min_master_version = data.google_container_engine_versions.versions.latest_master_version
-  node_version       = data.google_container_engine_versions.versions.latest_master_version
+  release_channel {
+    channel = var.kubernetes_release_channel
+  }
 
   logging_service    = var.kubernetes_logging_service
   monitoring_service = var.kubernetes_monitoring_service
