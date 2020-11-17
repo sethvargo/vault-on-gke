@@ -172,7 +172,7 @@ variable "kubernetes_master_authorized_networks" {
 }
 
 variable "kubernetes_release_channel" {
-  type = string
+  type    = string
   default = "REGULAR"
 }
 
@@ -180,7 +180,7 @@ variable "kubernetes_release_channel" {
 # security posture.
 variable "vault_source_ranges" {
   type        = list(string)
-  default     = [ "0.0.0.0/0" ]
+  default     = ["0.0.0.0/0"]
   description = "List of addresses or CIDR blocks which are allowed to connect to the Vault IP address. The default behavior is to allow anyone (0.0.0.0/0) access. You should restrict access to external IPs that need to access the Vault cluster."
 }
 
