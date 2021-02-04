@@ -106,7 +106,7 @@ resource "kubernetes_stateful_set" "vault" {
           image_pull_policy = "IfNotPresent"
 
           resources {
-            requests {
+            requests = {
               cpu    = "100m"
               memory = "64Mi"
             }
@@ -164,7 +164,7 @@ resource "kubernetes_stateful_set" "vault" {
           }
 
           resources {
-            requests {
+            requests = {
               cpu    = "500m"
               memory = "256Mi"
             }
