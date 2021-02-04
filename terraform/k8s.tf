@@ -4,8 +4,7 @@ data "google_client_config" "current" {}
 
 # This file contains all the interactions with Kubernetes
 provider "kubernetes" {
-  load_config_file = false
-  host             = google_container_cluster.vault.endpoint
+  host = google_container_cluster.vault.endpoint
 
   cluster_ca_certificate = base64decode(
     google_container_cluster.vault.master_auth[0].cluster_ca_certificate,
@@ -107,7 +106,7 @@ resource "kubernetes_stateful_set" "vault" {
           image_pull_policy = "IfNotPresent"
 
           resources {
-            requests {
+            requests = {
               cpu    = "100m"
               memory = "64Mi"
             }
@@ -165,7 +164,7 @@ resource "kubernetes_stateful_set" "vault" {
           }
 
           resources {
-            requests {
+            requests = {
               cpu    = "500m"
               memory = "256Mi"
             }
