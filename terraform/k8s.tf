@@ -4,8 +4,7 @@ data "google_client_config" "current" {}
 
 # This file contains all the interactions with Kubernetes
 provider "kubernetes" {
-  load_config_file = false
-  host             = google_container_cluster.vault.endpoint
+  host = google_container_cluster.vault.endpoint
 
   cluster_ca_certificate = base64decode(
     google_container_cluster.vault.master_auth[0].cluster_ca_certificate,
