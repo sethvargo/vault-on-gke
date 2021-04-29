@@ -25,6 +25,43 @@ resource "kubernetes_secret" "vault-tls" {
   }
 }
 
+resource "kubernetes_service_account" "vault-server" {
+  metadata {
+    name = "vault-server"
+  }
+}
+
+resource "kubernetes_role" "vault-server" {
+  metadata {
+    name = "vault-server"
+  }
+
+  rule {
+    api_groups     = [""]
+    resources      = ["pods"]
+    resource_names = [for i in range(var.num_vault_pods) : "vault-${i}"]
+    verbs          = ["get", "patch", "update"]
+  }
+}
+
+resource "kubernetes_role_binding" "vault-server" {
+  metadata {
+    name = "vault-server"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "Role"
+    name      = kubernetes_role.vault-server.metadata.0.name
+  }
+
+  subject {
+    kind      = "ServiceAccount"
+    name      = kubernetes_service_account.vault-server.metadata.0.name
+    namespace = kubernetes_service_account.vault-server.metadata.0.namespace
+  }
+}
+
 resource "kubernetes_service" "vault-lb" {
   metadata {
     name = "vault"
@@ -40,7 +77,8 @@ resource "kubernetes_service" "vault-lb" {
     external_traffic_policy     = "Local"
 
     selector = {
-      app = "vault"
+      app          = "vault"
+      vault-active = "true"
     }
 
     port {
@@ -78,6 +116,8 @@ resource "kubernetes_stateful_set" "vault" {
       }
 
       spec {
+        service_account_name = kubernetes_service_account.vault-server.metadata.0.name
+
         termination_grace_period_seconds = 10
 
         affinity {
@@ -190,10 +230,32 @@ resource "kubernetes_stateful_set" "vault" {
           }
 
           env {
+            name = "VAULT_K8S_POD_NAME"
+            value_from {
+              field_ref {
+                api_version = "v1"
+                field_path  = "metadata.name"
+              }
+            }
+          }
+
+          env {
+            name = "VAULT_K8S_NAMESPACE"
+            value_from {
+              field_ref {
+                api_version = "v1"
+                field_path  = "metadata.namespace"
+              }
+            }
+          }
+
+          env {
             name  = "VAULT_LOCAL_CONFIG"
             value = <<EOF
               api_addr     = "https://${google_compute_address.vault.address}"
               cluster_addr = "https://$(POD_IP_ADDR):8201"
+
+              service_registration "kubernetes" {}
 
               log_level = "warn"
 
