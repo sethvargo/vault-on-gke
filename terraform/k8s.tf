@@ -168,12 +168,12 @@ resource "kubernetes_stateful_set" "vault" {
           }
 
           env {
-            name  = "VAULT_SECRET_SHARES"
+            name  = "VAULT_RECOVERY_SHARES"
             value = var.vault_recovery_shares
           }
 
           env {
-            name  = "VAULT_SECRET_THRESHOLD"
+            name  = "VAULT_RECOVERY_THRESHOLD"
             value = var.vault_recovery_threshold
           }
         }
