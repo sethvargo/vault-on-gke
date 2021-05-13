@@ -31,7 +31,10 @@ please follow Kelsey's repository instead.
 - **Full Isolation** - The Vault cluster is provisioned in its own Kubernetes
   cluster in a dedicated GCP project that is provisioned dynamically at
   runtime. Clients connect to Vault using **only** the load balancer and Vault
-  is treated as a managed external service.
+  is treated as a managed external service. 
+  
+- **Internal Load-Balancer** - By default an external load balancer 
+  is created, but an internal load balancer is optional.
 
 - **Audit Logging** - Audit logging to [Cloud Logging][cloud-logging] (formerly Stackdriver) can be optionally enabled
   with minimal additional configuration.
@@ -155,6 +158,15 @@ Alternatively you can create and upload a dedicated service account for the
 GCP auth method during configuration and restrict the node-level default
 application credentials.
 
+### Internal Load-Balancer
+
+To use an internal GCE load-balancer, in `variables.tf` specify variable internal\_load\_balancer as true.
+Additionally, service_annotations must be specified.
+
+```text
+internal_load_balancer = true
+service_annotations    = { "cloud.google.com/load-balancer-type" = "Internal" }
+```
 
 ## Cleaning Up
 

@@ -209,11 +209,23 @@ variable "vault_init_container" {
 variable "vault_recovery_shares" {
   type        = string
   default     = "1"
-  description = "Number of recovery keys to generate."
+  description = "NOT IMPLEMENTED: Number of recovery keys to generate."
 }
 
 variable "vault_recovery_threshold" {
   type        = string
   default     = "1"
-  description = "Number of recovery keys required for quorum. This must be less than or equal to \"vault_recovery_keys\"."
+  description = "NOT IMPLEMENTED: Number of recovery keys required for quorum. This must be less than or equal to \"vault_recovery_keys\"."
+}
+
+variable "internal_load_balancer" {
+  type        = bool
+  default     = false
+  description = "Use internal load balancer. An internal IP address will be created. Service annotations are required for GCE."
+}
+
+variable "service_annotations" {
+  type    = map
+  default = {}
+  description = "Annotations for the vault service. For an GCE internal load balancer specify {\"cloud.google.com/load-balancer-type\" = \"Internal\"}"
 }
