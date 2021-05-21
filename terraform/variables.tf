@@ -98,6 +98,28 @@ variable "kms_crypto_key" {
 }
 
 #
+# Certificate options
+# ------------------------------
+
+variable "cert_extra_dns_names" {
+  type        = list
+  default     = []
+  description = "Names added to the Subject Alternative Name extension."
+}
+
+variable "cert_subject_common_name" {
+  type        = string
+  default     = "vault.local"
+  description = "The common name (CN) of the certificate subject."
+}
+
+variable "cert_subject_organization" {
+  type        = string
+  default     = "HashiCorp Vault"
+  description = "The organization of the certificate subject."
+}
+
+#
 # Kubernetes options
 # ------------------------------
 
