@@ -196,13 +196,13 @@ variable "num_vault_pods" {
 
 variable "vault_container" {
   type        = string
-  default     = "vault:1.2.1"
+  default     = "vault:1.8.1"
   description = "Name of the Vault container image to deploy. This can be specified like \"container:version\" or as a full container URL."
 }
 
 variable "vault_init_container" {
   type        = string
-  default     = "sethvargo/vault-init:1.0.0"
+  default     = "sethvargo/vault-init:0.2.0"
   description = "Name of the Vault init container image to deploy. This can be specified like \"container:version\" or as a full container URL."
 }
 
