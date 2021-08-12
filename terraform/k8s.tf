@@ -12,10 +12,22 @@ provider "kubernetes" {
   token = data.google_client_config.current.access_token
 }
 
+# Create a separate namespace for vault
+resource "kubernetes_namespace" "vault" {
+  depends_on = [google_container_cluster.vault]
+
+  metadata {
+    name = "vault"
+  }
+}
+
 # Write the secret
 resource "kubernetes_secret" "vault-tls" {
+  depends_on = [kubernetes_namespace.vault]
+
   metadata {
     name = "vault-tls"
+    namespace = var.vault_namespace
   }
 
   data = {
@@ -26,14 +38,20 @@ resource "kubernetes_secret" "vault-tls" {
 }
 
 resource "kubernetes_service_account" "vault-server" {
+  depends_on = [kubernetes_namespace.vault]
+
   metadata {
     name = "vault-server"
+    namespace = var.vault_namespace
   }
 }
 
 resource "kubernetes_role" "vault-server" {
+  depends_on = [kubernetes_namespace.vault]
+  
   metadata {
     name = "vault-server"
+    namespace = var.vault_namespace
   }
 
   rule {
@@ -45,8 +63,11 @@ resource "kubernetes_role" "vault-server" {
 }
 
 resource "kubernetes_role_binding" "vault-server" {
+  depends_on = [kubernetes_namespace.vault]
+
   metadata {
     name = "vault-server"
+    namespace = var.vault_namespace
   }
 
   role_ref {
@@ -63,8 +84,11 @@ resource "kubernetes_role_binding" "vault-server" {
 }
 
 resource "kubernetes_service" "vault-lb" {
+  depends_on = [kubernetes_namespace.vault]
+
   metadata {
     name = "vault"
+    namespace = var.vault_namespace
     labels = {
       app = "vault"
     }
@@ -91,8 +115,11 @@ resource "kubernetes_service" "vault-lb" {
 }
 
 resource "kubernetes_stateful_set" "vault" {
+  depends_on = [kubernetes_namespace.vault]
+
   metadata {
     name = "vault"
+    namespace = var.vault_namespace
     labels = {
       app = "vault"
     }

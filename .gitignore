@@ -2,4 +2,6 @@ terraform/.terraform*
 terraform/credentials.json
 terraform/terraform.tfvars
 terraform/terraform.tfstate*
+terraform.tfstate
+.DS_Store
 tls/*
