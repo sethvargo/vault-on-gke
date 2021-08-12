@@ -17,7 +17,7 @@ resource "kubernetes_namespace" "vault" {
   depends_on = [google_container_cluster.vault]
 
   metadata {
-    name = "vault"
+    name = var.vault_namespace
   }
 }
 
