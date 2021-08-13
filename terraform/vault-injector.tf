@@ -305,7 +305,7 @@ resource "kubernetes_deployment" "vault-injector" {
           }
           env {
             name  = "AGENT_INJECT_LOG_LEVEL"
-            value = "info"
+            value = "debug"
           }
           env {
             name  = "AGENT_INJECT_LOG_FORMAT"
@@ -317,7 +317,7 @@ resource "kubernetes_deployment" "vault-injector" {
           }
           env {
             name  = "AGENT_INJECT_VAULT_IMAGE"
-            value = "hashicorp/${var.vault_container}"
+            value = "${var.vault_container}"
           }
           env {
             name  = "AGENT_INJECT_TLS_AUTO"
@@ -385,3 +385,22 @@ resource "kubernetes_deployment" "vault-injector" {
   }
 }
 ######################################
+
+######################################
+# This firewall rule allows the injector to subscribe properly
+# to all the relevant Kubernetes events.
+# More on this:
+# https://github.com/hashicorp/vault-k8s/issues/46#issuecomment-574134564
+resource "google_compute_firewall" "vault-injector-hook-access" {
+  depends_on = [google_container_cluster.vault]
+  
+  name    = "vault-injector-hook-access"
+  network = google_compute_network.vault-network.name
+
+  allow {
+    protocol = "tcp"
+    ports    = ["8080"]
+  }
+
+  source_ranges = [var.kubernetes_masters_ipv4_cidr]
+}
