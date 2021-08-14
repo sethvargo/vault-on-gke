@@ -213,6 +213,88 @@ are able to communicate with the Kubernetes master nodes.
 The default allowed CIDR is `0.0.0.0/0 (anyone)`. **You should restrict this
 CIDR to the IP address(es) which will access the nodes!**.
 
+### Expose Vault to External Cluster Along With Sidecar Injector
+
+Commands:
+```
+vault secrets enable -path=secret -version=2 kv
+vault kv put secret/foo a=b
+vault audit enable file file_path=stdout
+vault policy write internal-app - <<EOH
+path "secret/*" {
+  capabilities = ["read"]
+}
+EOH
+```
+
+Make sure you have the Kubernetes context of the cluster terraform created:
+```
+gcloud container clusters get-credentials vault --region us-central1
+```
+
+Enter into one of the vault pods that were created and enable Kubernetes service to service auth:
+```
+kubectl exec -n vault -it vault-0 --container vault /bin/sh
+export VAULT_TOKEN=“{YOUR_TOKEN}”
+vault auth enable kubernetes
+vault write auth/kubernetes/config \
+    token_reviewer_jwt="$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)" \
+    kubernetes_host="https://$KUBERNETES_PORT_443_TCP_ADDR:443" \
+    kubernetes_ca_cert=@/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+```
+
+Awesome! At this point, vault is fully ready to allow the vault-injector to sidecar next to your pod deploy and deploy a secret into your pod via communicating with vault, regardless of the namespace. 
+
+Note: the terraform app config will enable all access to it by default. It's recommended to update `kubernetes_master_authorized_networks` with the addresses you want to access vault (this is within variables.tf).
+```
+  default = [
+    {
+      display_name = "Engineering Access"
+      cidr_block   = "{your CIDR block for whitelisting some static IP, for example your company's VPN's static IP}"
+    },
+    {
+      display_name = "Cluster Pods" # All of the pods within the vault cluster we created
+      cidr_block   = "10.0.92.0/22" # from the variable kubernetes_pods_ipv4_cidr
+    },
+    {
+      display_name = "Cluster #2 Pods" # All of the pods within some other cluster that you create
+      cidr_block   = "x.x.x.x/22"      # from your own new cluster configuration
+    }
+  ]
+```
+
+And likewise, update `vault_source_ranges`:
+default     = [{that static IP}, "10.0.92.0/22", "x.x.x.x/22"]
+
+OK, that will now secure your vault and give access only to the clusters you want to give access to, and some static IP that only you / your coworkers have access to.
+
+Now, for deploying an app to an authorized cluster, follow along with this sample app:
+https://github.com/agates4/sample-vault-helm-template
+
+To authorize this app via vault kubernetes auth, we'll need to run:
+```
+vault write auth/kubernetes/role/internal-app \
+    bound_service_account_names=internal-app \
+    bound_service_account_namespaces=\* \
+    policies=internal-app \
+    ttl=24h
+```
+
+Now all we need to do is, within this repo directory: https://github.com/agates4/sample-vault-helm-template
+Run `helm install python-service .`
+If you run `kubectl get pods`, you should see something like this:
+```
+NAME                              READY   STATUS    RESTARTS   AGE
+python-service-5ffd464465-pf8p4   2/2     Running   0          6s
+```
+
+And if you run `kubectl exec -it python-service-5ffd464465-pf8p4 cat /vault/secrets/foo.env `
+You should see:
+```
+export a=b
+```
+
+Congrats! Your sidecar injection worked! You can now access that secret directly through your app.
 
 ## FAQ
 

@@ -208,7 +208,7 @@ variable "vault_container" {
 
 variable "vault_injector" {
   type        = string
-  default     = "vault-k8s:0.11.0"
+  default     = "hashicorp/vault-k8s:0.11.0"
   description = "Name of the Vault injector container image to deploy. This can be specified like \"container:version\" or as a full container URL."
 }
 
