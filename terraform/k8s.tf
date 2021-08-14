@@ -153,38 +153,6 @@ resource "kubernetes_service" "vault-lb" {
   }
 }
 
-resource "kubernetes_service" "vault-internal-lb" {
-  depends_on = [kubernetes_namespace.vault]
-
-  metadata {
-    name = "vault-internal"
-    namespace = var.vault_namespace
-    labels = {
-      app = "vault-internal"
-    }
-    annotations = {"cloud.google.com/load-balancer-type" = "Internal"}
-  }
-
-  spec {
-    type                        = "LoadBalancer"
-    load_balancer_ip            = google_compute_address.vault-internal.address
-    load_balancer_source_ranges = var.kubernetes_pods_ipv4_cidr
-    external_traffic_policy     = "Local"
-
-    selector = {
-      app          = "vault"
-      vault-active = "true"
-    }
-
-    port {
-      name        = "vault-port"
-      port        = 443
-      target_port = 8200
-      protocol    = "TCP"
-    }
-  }
-}
-
 resource "kubernetes_stateful_set" "vault" {
   depends_on = [kubernetes_namespace.vault]
 

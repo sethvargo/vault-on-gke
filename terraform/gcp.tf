@@ -361,23 +361,8 @@ resource "google_compute_address" "vault" {
   depends_on = [google_project_service.service]
 }
 
-# Internal LB
-resource "google_compute_address" "vault-internal" {
-  name    = "vault-internal-lb"
-  region  = var.region
-  project = data.google_project.vault.project_id
-  subnetwork = google_compute_subnetwork.vault-subnetwork.self_link
-  address_type = "INTERNAL"
-
-  depends_on = [google_project_service.service]
-}
-
 output "address" {
   value = google_compute_address.vault.address
-}
-
-output "internal-address" {
-  value = google_compute_address.vault-internal.address
 }
 
 output "project" {
