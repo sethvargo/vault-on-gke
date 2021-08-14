@@ -42,7 +42,7 @@ resource "kubernetes_mutating_webhook_configuration" "vault-agent-injector-cfg" 
   webhook {
     name = "vault.hashicorp.com"
     side_effects = "None"
-    admission_review_versions = ["v1", "v1beta"]
+    admission_review_versions = ["v1beta1"]
 
     client_config {
       service {

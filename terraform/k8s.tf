@@ -83,6 +83,45 @@ resource "kubernetes_role_binding" "vault-server" {
   }
 }
 
+resource "kubernetes_cluster_role" "vault-server" {
+  metadata {
+    name = "vault-server"
+    labels = {
+      "app.kubernetes.io/name": "vault-server"
+      "app.kubernetes.io/instance": "vault"
+    }
+  }
+
+  rule {
+    api_groups = ["rbac.authorization.k8s.io"]
+    resources  = ["tokenreviews"]
+    verbs      = ["create", "update", "get", "list", "watch", "patch"]
+  }
+}
+
+resource "kubernetes_cluster_role_binding" "vault-server-binding" {
+  depends_on = [kubernetes_namespace.vault]
+
+  metadata {
+    name = "vault-server-binding"
+    labels = {
+      "app.kubernetes.io/name": "vault-server"
+      "app.kubernetes.io/instance": "vault"
+    }
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "system:auth-delegator"
+  }
+  subject {
+    kind      = "ServiceAccount"
+    name      = "vault-server"
+    namespace = var.vault_namespace
+  }
+}
+
 resource "kubernetes_service" "vault-lb" {
   depends_on = [kubernetes_namespace.vault]
 
@@ -98,6 +137,38 @@ resource "kubernetes_service" "vault-lb" {
     type                        = "LoadBalancer"
     load_balancer_ip            = google_compute_address.vault.address
     load_balancer_source_ranges = var.vault_source_ranges
+    external_traffic_policy     = "Local"
+
+    selector = {
+      app          = "vault"
+      vault-active = "true"
+    }
+
+    port {
+      name        = "vault-port"
+      port        = 443
+      target_port = 8200
+      protocol    = "TCP"
+    }
+  }
+}
+
+resource "kubernetes_service" "vault-internal-lb" {
+  depends_on = [kubernetes_namespace.vault]
+
+  metadata {
+    name = "vault-internal"
+    namespace = var.vault_namespace
+    labels = {
+      app = "vault-internal"
+    }
+    annotations = {"cloud.google.com/load-balancer-type" = "Internal"}
+  }
+
+  spec {
+    type                        = "LoadBalancer"
+    load_balancer_ip            = google_compute_address.vault-internal.address
+    load_balancer_source_ranges = var.kubernetes_pods_ipv4_cidr
     external_traffic_policy     = "Local"
 
     selector = {
