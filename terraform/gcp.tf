@@ -276,7 +276,7 @@ resource "google_container_cluster" "vault" {
 
     # Protect node metadata
     workload_metadata_config {
-      node_metadata = "SECURE"
+      mode = "GCE_METADATA"
     }
   }
 
@@ -290,8 +290,6 @@ resource "google_container_cluster" "vault" {
 
   # Disable basic authentication and cert-based authentication.
   master_auth {
-    username = ""
-    password = ""
 
     client_certificate_config {
       issue_client_certificate = false
